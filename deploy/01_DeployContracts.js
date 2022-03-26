@@ -1,6 +1,5 @@
 const { network } = require("hardhat");
 const {
-  STAKER,
   TEST_COLLATERAL_TOKEN,
   TREASURY,
   TREASURY_ALPHA,
@@ -98,15 +97,6 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   });
   console.log("Gems", gems.address);
 
-  const staker = await deploy(STAKER, {
-    from: deployer,
-    log: true,
-    proxy: {
-      proxyContract: "UUPSProxy",
-      initializer: false,
-    },
-  });
-
   const longShort = await deploy(LONGSHORT, {
     from: deployer,
     log: true,
@@ -115,7 +105,6 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
       initializer: false,
     },
   });
-  console.log("StakerDeployed", staker.address);
   console.log("LongShortDeployed", longShort.address);
 
   await deploy(TOKEN_FACTORY, {

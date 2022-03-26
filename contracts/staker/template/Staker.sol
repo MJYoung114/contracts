@@ -1013,8 +1013,8 @@ contract Staker is IStaker, AccessControlledAndUpgradeable {
   {
     require(amountSyntheticTokensToShift > 0, "No zero shifts.");
 
-    ILongShort(longShort).checkIfUserIsEligibleToTrade(msg.sender, marketIndex, isShiftFromLong);
-    ILongShort(longShort).setUserTradeTimer(msg.sender, marketIndex, !isShiftFromLong);
+    //ILongShort(longShort).checkIfUserIsEligibleToTrade(msg.sender, marketIndex, isShiftFromLong);
+    //ILongShort(longShort).setUserTradeTimer(msg.sender, marketIndex, !isShiftFromLong);
 
     address token = syntheticTokens[marketIndex][isShiftFromLong];
     uint256 totalAmountForNextShift = amountSyntheticTokensToShift +

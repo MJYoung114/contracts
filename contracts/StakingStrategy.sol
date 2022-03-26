@@ -91,11 +91,6 @@ contract StakingStrategy is Initializable, UUPSUpgradeable, AccessControlUpgrade
       amountOfTokensToMatchRatio
     );
 
-    ISyntheticToken(_longShort.syntheticTokens(marketIndex, isLong)).stake(amountToken);
-    ISyntheticToken(_longShort.syntheticTokens(marketIndex, !isLong)).stake(
-      amountOfTokensToMatchRatio
-    );
-
     (uint256 finalLongShortRatio, uint256 totalValueStaked) = _getContractStakedBalanceAndRatio(
       marketIndex,
       longTokenAddress,

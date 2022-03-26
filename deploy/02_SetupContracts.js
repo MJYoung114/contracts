@@ -77,9 +77,7 @@ module.exports = async (hardhatDeployArguments) => {
     TokenFactory.address
   );
 
-  const Staker = await deployments.get(STAKER);
-  const staker = await ethers.getContractAt(STAKER, Staker.address);
-  console.log("3", longShort.address, staker.address);
+  console.log("3", longShort.address);
 
   const floatTokenToUse = isAlphaLaunch ? FLOAT_TOKEN_ALPHA : FLOAT_TOKEN;
   const FloatToken = await deployments.get(floatTokenToUse);
@@ -101,7 +99,7 @@ module.exports = async (hardhatDeployArguments) => {
   await longShort.initialize(
     admin,
     tokenFactory.address,
-    staker.address,
+    "0x0000000000000000000000000000000000000000",
     gems.address
   );
   console.log("6");
@@ -112,41 +110,38 @@ module.exports = async (hardhatDeployArguments) => {
       await floatToken.initialize(
         "AVA Test Float",
         "avaTestFLT",
-        staker.address,
+        "0x0000000000000000000000000000000000000000",
         treasury.address
       );
     } else {
       await floatToken.initialize(
         "Alpha Float",
         "alphaFLT",
-        staker.address,
+        "0x0000000000000000000000000000000000000000",
         treasury.address
       );
     }
   } else {
-    await floatToken.initialize("Float", "FLT", staker.address);
+    await floatToken.initialize(
+      "Float",
+      "FLT",
+      "0x0000000000000000000000000000000000000000"
+    );
   }
   console.log("9");
-  await staker.initialize(
-    admin,
-    longShort.address,
-    floatToken.address,
-    treasury.address,
-    floatCapital.address,
-    discountSigner,
-    "333333333333333333", // 25% for flt (33.333/133.333 ~= 0.25)
-    gems.address
-  );
   console.log("10");
 
-  await gems.initialize(admin, longShort.address, staker.address);
+  await gems.initialize(
+    admin,
+    longShort.address,
+    "0x0000000000000000000000000000000000000000"
+  );
 
   console.log("11");
   if (networkToUse == "polygon") {
     console.log("polygon test transactions");
     await launchPolygonMarkets(
       {
-        staker,
         longShort: longShort.connect(admin),
         paymentToken,
         treasury,
@@ -156,7 +151,6 @@ module.exports = async (hardhatDeployArguments) => {
   } else if (networkToUse == "avalanche") {
     await launchAvaxMarket(
       {
-        staker,
         longShort: longShort.connect(admin),
         paymentToken,
         treasury,
@@ -167,7 +161,6 @@ module.exports = async (hardhatDeployArguments) => {
     console.log("mumbai test transactions");
     await runMumbaiTransactions(
       {
-        staker,
         longShort: longShort.connect(admin),
         paymentToken,
         treasury,
@@ -178,7 +171,6 @@ module.exports = async (hardhatDeployArguments) => {
     console.log("fantom test transactions");
     await runFantomTestnetTransactions(
       {
-        staker,
         longShort: longShort.connect(admin),
         paymentToken,
         treasury,
@@ -189,7 +181,6 @@ module.exports = async (hardhatDeployArguments) => {
     console.log("local test transactions");
     await runTestTransactions(
       {
-        staker,
         longShort: longShort.connect(admin),
         paymentToken,
         treasury,

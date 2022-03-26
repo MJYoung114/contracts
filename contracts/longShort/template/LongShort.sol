@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import "../../interfaces/ITokenFactory.sol";
 import "../../interfaces/ISyntheticToken.sol";
-import "../../interfaces/IStaker.sol";
 import "../../interfaces/ILongShort.sol";
 import "../../interfaces/IYieldManager.sol";
 import "../../interfaces/IOracleManager.sol";
@@ -50,7 +49,6 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
   /* ══════ Global state ══════ */
   uint32 public override latestMarket;
 
-  address public staker;
   address public tokenFactory;
   address public gems;
 
@@ -135,10 +133,6 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
     adminOnlyModifierLogic();
     _;
   }
-  modifier stakerOnly() {
-    require(msg.sender == staker, "staker only");
-    _;
-  }
 
   modifier onlyValidSynthetic(uint32 marketIndex, bool isLong) {
     require(syntheticTokens[marketIndex][isLong] == msg.sender, "not valid synth");
@@ -164,9 +158,7 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
   }
 
   function gemCollectingModifierLogic() internal virtual {
-    if (msg.sender != staker) {
-      GEMS(gems).gm(msg.sender);
-    }
+    GEMS(gems).gm(msg.sender);
   }
 
   modifier gemCollecting() {
@@ -203,16 +195,10 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
     address _staker,
     address _gems
   ) public virtual {
-    require(
-      _admin != address(0) &&
-        _tokenFactory != address(0) &&
-        _staker != address(0) &&
-        _gems != address(0)
-    );
+    require(_admin != address(0) && _tokenFactory != address(0) && _gems != address(0));
     // The below function ensures that this contract can't be re-initialized!
     _AccessControlledAndUpgradeable_init(_admin);
     tokenFactory = _tokenFactory;
-    staker = _staker;
     gems = _gems;
 
     emit LongShortV1(_admin, _tokenFactory, _staker);
@@ -230,15 +216,6 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
     );
   }
 
-  function setUserTradeTimer(
-    address user,
-    uint32 marketIndex,
-    bool isLong
-  ) external stakerOnly {
-    // Could use `SafeCast.toUint32` from open Zeppelin also.
-    userLastInteractionTimestamp[marketIndex][isLong][user].timestamp = uint32(block.timestamp);
-  }
-
   // updates if 20000 seconds have passed and user is clear.
   function _checkIfUserIsEligibleToTrade(
     address user,
@@ -253,15 +230,6 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
       ((block.timestamp - lastInteractionTimestamp) >= CONTRACT_SLOW_TRADE_TIME()),
       "Rapid trading disabled, under wait period"
     );
-  }
-
-  // updates if 20000 seconds have passed and user is clear.
-  function checkIfUserIsEligibleToTrade(
-    address user,
-    uint32 marketIndex,
-    bool isLong
-  ) external stakerOnly {
-    _checkIfUserIsEligibleToTrade(user, marketIndex, isLong);
   }
 
   // updates if 20000 seconds have passed and user is clear.
@@ -332,7 +300,6 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
     );
 
     uint32 marketIndex = ++latestMarket;
-    address _staker = staker;
 
     // Ensure new markets don't use the same yield manager
     IYieldManager(_yieldManager).initializeForMarket();
@@ -341,7 +308,6 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
     syntheticTokens[marketIndex][true] = ITokenFactory(tokenFactory).createSyntheticToken(
       string(abi.encodePacked("Float Long ", syntheticName)),
       string(abi.encodePacked("fl", syntheticSymbol)),
-      _staker,
       marketIndex,
       true
     );
@@ -350,7 +316,6 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
     syntheticTokens[marketIndex][false] = ITokenFactory(tokenFactory).createSyntheticToken(
       string(abi.encodePacked("Float Short ", syntheticName)),
       string(abi.encodePacked("fs", syntheticSymbol)),
-      _staker,
       marketIndex,
       false
     );
@@ -461,32 +426,14 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
   /// @notice Sets a market as active once it has already been setup by createNewSyntheticMarket.
   /// @dev Seperated from createNewSyntheticMarket due to gas considerations.
   /// @param marketIndex An int32 which uniquely identifies the market.
-  /// @param kInitialMultiplier Linearly decreasing multiplier for Float token issuance for the market when staking synths.
-  /// @param kPeriod Time which kInitialMultiplier will last
-  /// @param unstakeFee_e18 Base 1e18 percentage fee levied when unstaking for the market.
-  /// @param balanceIncentiveCurve_exponent Sets the degree to which Float token issuance differs
-  /// for market sides in unbalanced markets. See Staker.sol
-  /// @param balanceIncentiveCurve_equilibriumOffset An offset to account for naturally imbalanced markets
-  /// when Float token issuance should differ for market sides. See Staker.sol
   /// @param initialMarketSeedForEachMarketSide Amount of payment token that will be deposited in each market side to seed the market.
   function initializeMarket(
     uint32 marketIndex,
-    uint256 kInitialMultiplier,
-    uint256 kPeriod,
-    uint256 unstakeFee_e18,
     uint256 initialMarketSeedForEachMarketSide,
-    uint256 balanceIncentiveCurve_exponent,
-    int256 balanceIncentiveCurve_equilibriumOffset,
     uint256 _marketTreasurySplitGradient_e18,
     uint256 marketLeverage
   ) external adminOnly {
-    require(
-      kInitialMultiplier != 0 &&
-        unstakeFee_e18 != 0 &&
-        initialMarketSeedForEachMarketSide != 0 &&
-        balanceIncentiveCurve_exponent != 0 &&
-        _marketTreasurySplitGradient_e18 != 0
-    );
+    require(initialMarketSeedForEachMarketSide != 0 && _marketTreasurySplitGradient_e18 != 0);
 
     require(!marketExists[marketIndex], "already initialized");
     require(marketIndex <= latestMarket, "index too high");
@@ -502,27 +449,6 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
 
     require(marketLeverage <= 50e18 && marketLeverage >= 1e17, "Incorrect leverage");
     marketLeverage_e18[marketIndex] = marketLeverage;
-
-    // Add new staker funds with fresh synthetic tokens.
-    IStaker(staker).addNewStakingFund(
-      marketIndex,
-      syntheticTokens[marketIndex][true],
-      syntheticTokens[marketIndex][false],
-      kInitialMultiplier,
-      kPeriod,
-      unstakeFee_e18,
-      balanceIncentiveCurve_exponent,
-      balanceIncentiveCurve_equilibriumOffset
-    );
-
-    IStaker(staker).pushUpdatedMarketPricesToUpdateFloatIssuanceCalculations(
-      marketIndex,
-      1,
-      1e18,
-      1e18,
-      initialMarketSeedForEachMarketSide,
-      initialMarketSeedForEachMarketSide
-    );
 
     emit NewMarketLaunchedAndSeeded(
       marketIndex,
@@ -808,39 +734,6 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
     ║       HELPER FUNCTIONS       ║
     ╚══════════════════════════════╝*/
 
-  /// @notice This calculates the value transfer from the overbalanced to underbalanced side (i.e. the funding rate)
-  /// This is a further incentive measure to balanced markets. This may be present on some and not other synthetic markets.
-  /// @param marketIndex The market for which to execute the function for.
-  /// @param _fundingRateMultiplier_e18 A scalar base e18 for the funding rate.
-  /// @param overbalancedValue Side with more liquidity.
-  /// @param underbalancedValue Side with less liquidity.
-  /// @return fundingAmount The amount the overbalanced side needs to pay the underbalanced.
-  function _calculateFundingAmount(
-    uint32 marketIndex,
-    uint256 _fundingRateMultiplier_e18,
-    uint256 overbalancedValue,
-    uint256 underbalancedValue
-  ) internal virtual returns (uint256 fundingAmount) {
-    uint256 lastUpdateTimestamp = IStaker(staker).safe_getUpdateTimestamp(
-      marketIndex,
-      marketUpdateIndex[marketIndex]
-    );
-
-    /* 
-    overBalanced * (1 - underBalanced/overBalanced)
-      = overBalanced * (overBalanced - underBalanced)/overBalanced)
-      = overBalanced - underBalanced
-      = market imbalance
-    
-    funding amount = market imbalance * yearlyMaxFundingRate * (now - lastUpdate) / (365.25days in seconds base e18)
-    */
-    fundingAmount =
-      ((overbalancedValue - underbalancedValue) *
-        _fundingRateMultiplier_e18 *
-        (block.timestamp - lastUpdateTimestamp)) /
-      SECONDS_IN_A_YEAR_e18;
-  }
-
   /// @notice First gets yield from the yield manager and allocates it to market and treasury.
   /// It then allocates the full market yield portion to the underbalanced side of the market.
   /// NB this function also adjusts the value of the long and short side based on the latest
@@ -911,21 +804,6 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
     int256 valueChange = ((newAssetPrice - oldAssetPrice) *
       underbalancedSideValue *
       int256(marketLeverage_e18[marketIndex])) / (oldAssetPrice * 1e18);
-
-    uint256 fundingRateMultiplier = fundingRateMultiplier_e18[marketIndex];
-    if (fundingRateMultiplier > 0) {
-      //  slow drip interest funding payment here.
-      //  recheck yield hasn't tipped the market.
-      if (longValue < shortValue) {
-        valueChange += int256(
-          _calculateFundingAmount(marketIndex, fundingRateMultiplier, shortValue, longValue)
-        );
-      } else {
-        valueChange -= int256(
-          _calculateFundingAmount(marketIndex, fundingRateMultiplier, longValue, shortValue)
-        );
-      }
-    }
 
     if (valueChange < 0) {
       valueChange = -valueChange; // make value change positive
@@ -1014,15 +892,6 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
         SafeCast.toUint128(newShortPoolValue)
       );
 
-      IStaker(staker).pushUpdatedMarketPricesToUpdateFloatIssuanceCalculations(
-        marketIndex,
-        currentMarketIndex,
-        syntheticTokenPrice_inPaymentTokens_long,
-        syntheticTokenPrice_inPaymentTokens_short,
-        newLongPoolValue,
-        newShortPoolValue
-      );
-
       emit SystemStateUpdated(
         marketIndex,
         currentMarketIndex,
@@ -1099,31 +968,6 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
     userNextPrice_currentUpdateIndex[marketIndex][msg.sender] = nextUpdateIndex;
 
     emit NextPriceDeposit(marketIndex, isLong, amount, msg.sender, nextUpdateIndex);
-  }
-
-  function mintAndStakeNextPrice(
-    uint32 marketIndex,
-    uint256 amount,
-    bool isLong
-  )
-    external
-    virtual
-    override
-    updateSystemStateMarketAndExecuteOutstandingNextPriceSettlements(staker, marketIndex)
-    gemCollecting
-  {
-    require(amount > 0, "Mint amount must be greater than 0");
-    _setUserTradeTimer(marketIndex, isLong);
-    _transferPaymentTokensFromUserToYieldManager(marketIndex, amount);
-
-    batched_amountPaymentToken_deposit[marketIndex][isLong] += amount;
-    userNextPrice_paymentToken_depositAmount[marketIndex][isLong][staker] += amount;
-    uint256 nextUpdateIndex = marketUpdateIndex[marketIndex] + 1;
-    userNextPrice_currentUpdateIndex[marketIndex][staker] = nextUpdateIndex;
-
-    IStaker(staker).mintAndStakeNextPrice(marketIndex, amount, isLong, msg.sender);
-
-    emit NextPriceDepositAndStake(marketIndex, isLong, amount, msg.sender, nextUpdateIndex);
   }
 
   /// @notice Allows users to mint long synthetic assets for a market. To prevent front-running these mints are executed on the next price update from the oracle.
@@ -1212,10 +1056,8 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
   {
     require(amountSyntheticTokensToShift > 0, "Shift amount == 0");
 
-    if (msg.sender != staker) {
-      _checkIfUserIsEligibleToTrade(msg.sender, marketIndex, isShiftFromLong);
-      _setUserTradeTimer(marketIndex, !isShiftFromLong);
-    }
+    _checkIfUserIsEligibleToTrade(msg.sender, marketIndex, isShiftFromLong);
+    _setUserTradeTimer(marketIndex, !isShiftFromLong);
 
     ISyntheticToken(syntheticTokens[marketIndex][isShiftFromLong]).transferFrom(
       msg.sender,

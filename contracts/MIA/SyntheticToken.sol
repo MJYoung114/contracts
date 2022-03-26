@@ -2,7 +2,6 @@
 
 pragma solidity 0.8.10;
 
-import "../interfaces/IStaker.sol";
 import "../interfaces/ILongShort.sol";
 import "../interfaces/ISyntheticToken.sol";
 
@@ -23,8 +22,6 @@ contract SyntheticToken is ISyntheticToken, ERC20, ERC20Burnable, AccessControl,
 
   /// @notice Address of the LongShort contract, a deployed LongShort.sol
   address public immutable longShort;
-  /// @notice Address of the Staker contract, a deployed Staker.sol
-  address public immutable staker;
   /// @notice Identifies which market in longShort the token is for.
   uint32 public immutable marketIndex;
   /// @notice Whether the token is a long token or short token for its market.
@@ -35,35 +32,21 @@ contract SyntheticToken is ISyntheticToken, ERC20, ERC20Burnable, AccessControl,
   /// @param name The name of the token.
   /// @param symbol The symbol for the token.
   /// @param _longShort Address of the core LongShort contract.
-  /// @param _staker Address of the staker contract.
   /// @param _marketIndex Which market the token is for.
   /// @param _isLong Whether the token is long or short for its market.
   constructor(
     string memory name,
     string memory symbol,
     address _longShort,
-    address _staker,
     uint32 _marketIndex,
     bool _isLong
   ) ERC20(name, symbol) ERC20Permit(name) {
     longShort = _longShort;
-    staker = _staker;
     marketIndex = _marketIndex;
     isLong = _isLong;
 
     _setupRole(DEFAULT_ADMIN_ROLE, _longShort);
     _setupRole(MINTER_ROLE, _longShort);
-  }
-
-  /// @notice Allows users to stake their synthetic tokens to earn Float.
-  /// @dev Core staking logic contained in Staker.sol
-  /// @param amount Amount to stake in wei.
-  function stake(uint256 amount) external override {
-    // NOTE: this is safe, this function will throw "ERC20: transfer
-    //       amount exceeds balance" if amount exceeds users balance.
-    super._transfer(msg.sender, address(staker), amount);
-
-    IStaker(staker).stakeFromUser(msg.sender, amount);
   }
 
   /*╔══════════════════════════════════════════════════════╗

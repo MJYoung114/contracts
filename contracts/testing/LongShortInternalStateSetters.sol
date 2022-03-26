@@ -19,7 +19,6 @@ contract LongShortInternalStateSetters is LongShort {
   ) public {
     latestMarket = _latestMarket;
     marketExists[marketIndex] = marketIndexValue;
-    staker = (_staker);
     syntheticTokens[marketIndex][
       true /*short*/
     ] = (longAddress);
@@ -68,8 +67,6 @@ contract LongShortInternalStateSetters is LongShort {
 
     syntheticTokens[marketIndex][true] = synthLong;
     syntheticTokens[marketIndex][false] = synthShort;
-
-    staker = _staker;
 
     userNextPrice_currentUpdateIndex[marketIndex][_staker] = stakerNextPrice_currentUpdateIndex;
   }
