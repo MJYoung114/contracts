@@ -31,6 +31,7 @@
   "dependencies": {
     "@chainlink/contracts": "^0.1.7",
     "@float-capital/ds-test": "^0.0.1",
+    "@layerzerolabs/contracts": "LayerZero-Labs/LayerZero",
     "@nomiclabs/ethereumjs-vm": "^4.2.2",
     "@ryyppy/rescript-promise": "^2.1.0",
     "chai": "^4.3.4",

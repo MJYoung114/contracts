@@ -16,6 +16,33 @@ import "../interfaces/IOracleManager.sol";
 import "../abstract/AccessControlledAndUpgradeable.sol";
 import "../GEMS.sol";
 
+import "@layerzerolabs/contracts/contracts/interfaces/ILayerZeroReceiver.sol";
+import "@layerzerolabs/contracts/contracts/interfaces/ILayerZeroEndpoint.sol";
+
+/*
+////// template
+
+contract Example is ILayerZeroReceiver {
+
+    // the LayerZero endpoint address
+    ILayerZeroEndpoint public endpoint;
+
+    constructor(address _endpoint)  {
+        endpoint = ILayerZeroEndpoint(_endpoint);
+    }
+    
+    // Use the endpoint to send a message to another chain.
+    // This function should be payable, and you should send 
+    // additional gas to make sure the message delivery is paid for
+    // on the destination chain. 
+    function sendYourMessage(uint16 _chainId, bytes calldata _endpoint) public payable {
+        endpoint.send{value:msg.value}(_chainId, _endpoint, bytes(""), msg.sender, address(0x0), bytes(""));
+    }
+
+    // receiving message interface method.
+    function lzReceive(uint16 _srcChainId, bytes memory _fromAddress, bytes memory _payload) override external {}
+}
+*/
 /**
  **** visit https://float.capital *****
  */
@@ -26,7 +53,7 @@ import "../GEMS.sol";
 /// @dev All functions in this file are currently `virtual`. This is NOT to encourage inheritance.
 /// It is merely for convenince when unit testing.
 /// @custom:auditors This contract balances long and short sides.
-contract LongShortSlave is AccessControlledAndUpgradeable {
+contract LongShortSlave is AccessControlledAndUpgradeable, ILayerZeroReceiver {
   enum MasterChain {
     NO_MASTER,
     AVALANCHE,
@@ -90,4 +117,13 @@ contract LongShortSlave is AccessControlledAndUpgradeable {
     uint256 marketIndex;
     SynthPriceInPaymentToken paymentTokens;
   }
+
+  /*
+    function sendYourMessage(uint16 _chainId, bytes calldata _endpoint) public payable {
+        endpoint.send{value:msg.value}(_chainId, _endpoint, bytes(""), msg.sender, address(0x0), bytes(""));
+    }
+
+    // receiving message interface method.
+    function lzReceive(uint16 _srcChainId, bytes memory _fromAddress, bytes memory _payload) override external {}
+  */
 }
