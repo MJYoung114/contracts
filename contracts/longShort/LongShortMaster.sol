@@ -36,6 +36,8 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
   // mapping(uint32 => uint256) public marketUpdateIndex;
   mapping(uint32 => uint256) public latestActionIndex;
 
+  mapping(uint32 => mapping(bool => uint256)) public slaveChainsTotalSupply;
+
   // mapping(uint32 => address) public paymentTokens;
   // mapping(uint32 => address) public yieldManagers;
 
@@ -102,14 +104,38 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
       batched_amountSyntheticToken_redeem[marketIndex][
         pushMessageReceived.isLong
       ] += pushMessageReceived.redeemAmount;
-    } else if (pushMessageReceived.shiftAwayAmount > 0) {
-      batched_amountSyntheticToken_toShiftAwayFrom_marketSide[marketIndex][
-        pushMessageReceived.isLong
-      ] += pushMessageReceived.shiftAwayAmount;
     }
+
     uint256 nextPriceMarketUpdateIndex = marketUpdateIndex[marketIndex] + 1;
     latestActionInNextExecutableBatch[marketIndex][nextPriceMarketUpdateIndex] = pushMessageReceived
       .actionIndex;
+  }
+
+  function _sendUpdatedStateToSlave(uint32 marketIndex, uint256 currentUpdateIndex) internal {
+    Types.MasterPushMessage memory pushMessage = Types.MasterPushMessage(
+      latestActionInNextExecutableBatch[marketIndex][currentUpdateIndex],
+      marketIndex,
+      currentUpdateIndex,
+      syntheticToken_priceSnapshot[marketIndex][currentUpdateIndex]
+    );
+
+    bytes memory payload = abi.encode(pushMessage);
+    uint16 destChainId = slaveChainId[marketIndex];
+
+    endpoint.send{value: msg.value}(
+      // @param _dstChainId - the destination chain identifier
+      destChainId,
+      // @param _destination - the address on destination chain (in bytes). address length/format may vary by chains
+      slaveChainLongShortAddressAsBytes[marketIndex],
+      // @param _payload - a custom bytes payload to send to the destination contract
+      payload,
+      // @param _refundAddress - if the source transaction is cheaper than the amount of value passed, refund the additional amount to this address
+      payable(msg.sender),
+      // @param _zroPaymentAddress - the address of the ZRO token holder who would pay for the transaction
+      address(0),
+      // @param _adapterParams - parameters for custom functionality. e.g. receive airdropped native gas from the relayer on destination
+      bytes("")
+    );
   }
 
   /// @notice Allows users to mint synthetic assets for a market. To prevent front-running these mints are executed on the next price update from the oracle.
@@ -125,47 +151,17 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     internal
     virtual
     override
-  // updateSystemStateMarketAndExecuteOutstandingNextPriceSettlements(msg.sender, marketIndex)
+    updateSystemStateMarketAndExecuteOutstandingNextPriceSettlements(msg.sender, marketIndex)
   // gemCollecting
   {
     require(amount > 0, "Mint amount == 0");
     // TODO: add back
     _transferPaymentTokensFromUserToYieldManager(marketIndex, amount);
 
+    batched_amountPaymentToken_deposit[marketIndex][isLong] += amount;
     userNextPrice_paymentToken_depositAmount[marketIndex][isLong][msg.sender] += amount;
     uint256 nextUpdateIndex = marketUpdateIndex[marketIndex] + 1;
     userNextPrice_currentUpdateIndex[marketIndex][msg.sender] = nextUpdateIndex;
-
-    ++latestActionIndex[marketIndex];
-
-    Types.SlavePushMessage memory pushMessage = Types.SlavePushMessage(
-      latestActionIndex[marketIndex],
-      amount,
-      0,
-      0,
-      marketIndex,
-      isLong
-    );
-
-    bytes memory payload = abi.encode(pushMessage);
-    uint16 destChainId = slaveChainId[marketIndex];
-
-    // @notice send a LayerZero message to the specified address at a LayerZero endpoint.
-    // @param _dstChainId - the destination chain identifier
-    // @param _destination - the address on destination chain (in bytes). address length/format may vary by chains
-    // @param _payload - a custom bytes payload to send to the destination contract
-    // @param _refundAddress - if the source transaction is cheaper than the amount of value passed, refund the additional amount to this address
-    // @param _zroPaymentAddress - the address of the ZRO token holder who would pay for the transaction
-    // @param _adapterParams - parameters for custom functionality. e.g. receive airdropped native gas from the relayer on destination
-    // function send(uint16 _dstChainId, bytes calldata _destination, bytes calldata _payload, address payable _refundAddress, address _zroPaymentAddress, bytes calldata _adapterParams) external payable;
-    endpoint.send{value: msg.value}(
-      destChainId,
-      slaveChainLongShortAddressAsBytes[marketIndex],
-      payload,
-      payableSender,
-      zroPaymentAddress,
-      bytes("")
-    );
 
     emit NextPriceDeposit(marketIndex, isLong, amount, msg.sender, nextUpdateIndex);
   }
@@ -198,18 +194,21 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     bool assetPriceHasChanged = assetPrice[marketIndex] != newAssetPrice;
 
     if (assetPriceHasChanged) {
-      (
-        uint256 newLongPoolValue,
-        uint256 newShortPoolValue
-      ) = _claimAndDistributeYieldThenRebalanceMarket(marketIndex, newAssetPrice);
+      MarketSideValueInPaymentToken
+        storage currentMarketSideValueInPaymentToken = marketSideValueInPaymentToken[marketIndex];
+      // Claiming and distributing the yield
+      uint256 newLongPoolValue = currentMarketSideValueInPaymentToken.value_long;
+      uint256 newShortPoolValue = currentMarketSideValueInPaymentToken.value_short;
 
       uint256 syntheticTokenPrice_inPaymentTokens_long = _getSyntheticTokenPrice(
         newLongPoolValue,
-        ISyntheticToken(syntheticTokens[marketIndex][true]).totalSupply()
+        ISyntheticToken(syntheticTokens[marketIndex][true]).totalSupply() +
+          slaveChainsTotalSupply[marketIndex][true]
       );
       uint256 syntheticTokenPrice_inPaymentTokens_short = _getSyntheticTokenPrice(
         newShortPoolValue,
-        ISyntheticToken(syntheticTokens[marketIndex][false]).totalSupply()
+        ISyntheticToken(syntheticTokens[marketIndex][false]).totalSupply() +
+          slaveChainsTotalSupply[marketIndex][false]
       );
 
       assetPrice[marketIndex] = newAssetPrice;
@@ -221,6 +220,8 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
         SafeCast.toUint128(syntheticTokenPrice_inPaymentTokens_long),
         SafeCast.toUint128(syntheticTokenPrice_inPaymentTokens_short)
       );
+
+      _sendUpdatedStateToSlave(marketIndex, currentMarketIndex);
 
       (
         int256 long_changeInMarketValue_inPaymentToken,
