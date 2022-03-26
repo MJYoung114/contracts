@@ -9,19 +9,14 @@ library Types {
     uint256 actionIndex;
     uint256 depositAmount;
     uint256 redeemAmount;
-    uint256 shiftAwayAmount;
     uint32 marketIndex;
     bool isLong;
-  }
-
-  struct PushYield {
-    uint32 marketIndex;
-    uint256 amount;
   }
 
   struct MasterPushMessage {
     uint256 latestProcessedActionIndex;
     uint256 marketIndex;
+    uint256 currentUpdateIndex;
     LongShort.SynthPriceInPaymentToken paymentTokens;
   }
 }

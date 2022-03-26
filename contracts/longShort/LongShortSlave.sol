@@ -74,7 +74,19 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     bytes calldata _srcAddress,
     uint64 _nonce,
     bytes calldata _payload
-  ) external override {}
+  ) external override {
+    Types.MasterPushMessage memory pushMessageReceived = abi.decode(
+      _payload,
+      (Types.MasterPushMessage)
+    );
+
+    uint32 marketIndex = pushMessageReceived.marketIndex;
+    uint256 currentMarketIndex = pushMessageReceived.currentUpdateIndex;
+    syntheticToken_priceSnapshot[marketIndex][currentMarketIndex] = pushMessageReceived
+      .paymentTokens;
+
+    marketUpdateIndex[marketIndex] = currentMarketIndex;
+  }
 
   /// @notice Allows users to mint synthetic assets for a market. To prevent front-running these mints are executed on the next price update from the oracle.
   /// @dev Called by external functions to mint either long or short. If a user mints multiple times before a price update, these are treated as a single mint.
@@ -89,7 +101,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     internal
     virtual
     override
-    // updateSystemStatMarketAndExecuteOutstandingNextPriceSettlements(msg.sender, marketIndex)
+    updateSystemStateMarketAndExecuteOutstandingNextPriceSettlements(msg.sender, marketIndex)
     noExistingActionsInBatch(marketIndex)
     gemCollecting
   {
@@ -97,6 +109,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
 
     _transferPaymentTokensFromUserToYieldManager(marketIndex, amount);
 
+    batched_amountPaymentToken_deposit[marketIndex][isLong] += amount;
     userNextPrice_paymentToken_depositAmount[marketIndex][isLong][msg.sender] += amount;
     // uint256 nextUpdateIndex = marketUpdateIndex[marketIndex] + 1;
     // userNextPrice_currentUpdateIndex[marketIndex][msg.sender] = nextUpdateIndex;
@@ -108,7 +121,6 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     Types.SlavePushMessage memory pushMessage = Types.SlavePushMessage(
       latestActionIndex[marketIndex],
       amount,
-      0,
       0,
       marketIndex,
       isLong
@@ -147,5 +159,135 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
   /// @param amount Amount of payment tokens in that token's lowest denominationfor which to mint synthetic assets at next price.
   function mintShortNextPrice(uint32 marketIndex, uint256 amount) external override {
     _mintNextPrice(marketIndex, amount, false);
+  }
+
+  function _executeOutstandingNextPriceMints(
+    uint32 marketIndex,
+    address user,
+    bool isLong
+  ) internal virtual override {
+    uint256 currentPaymentTokenDepositAmount = userNextPrice_paymentToken_depositAmount[
+      marketIndex
+    ][isLong][user];
+    if (currentPaymentTokenDepositAmount > 0) {
+      userNextPrice_paymentToken_depositAmount[marketIndex][isLong][user] = 0;
+      uint256 amountSyntheticTokensToMintToUser = _getAmountSyntheticToken(
+        currentPaymentTokenDepositAmount,
+        get_syntheticToken_priceSnapshot_side(
+          marketIndex,
+          isLong,
+          userNextPrice_currentUpdateIndex[marketIndex][user]
+        )
+      );
+      ISyntheticToken(syntheticTokens[marketIndex][isLong]).mint(
+        user,
+        amountSyntheticTokensToMintToUser
+      );
+    }
+  }
+
+  function _executeOutstandingNextPriceRedeems(
+    uint32 marketIndex,
+    address user,
+    bool isLong
+  ) internal virtual {
+    uint256 currentSyntheticTokenRedemptions = userNextPrice_syntheticToken_redeemAmount[
+      marketIndex
+    ][isLong][user];
+    if (currentSyntheticTokenRedemptions > 0) {
+      userNextPrice_syntheticToken_redeemAmount[marketIndex][isLong][user] = 0;
+      uint256 amountPaymentToken_toRedeem = _getAmountPaymentToken(
+        currentSyntheticTokenRedemptions,
+        get_syntheticToken_priceSnapshot_side(
+          marketIndex,
+          isLong,
+          userNextPrice_currentUpdateIndex[marketIndex][user]
+        )
+      );
+
+      ISyntheticToken(syntheticTokens[marketIndex][isLong]).burn(currentSyntheticTokenRedemptions);
+
+      IYieldManager(yieldManagers[marketIndex]).transferPaymentTokensToUser(
+        user,
+        amountPaymentToken_toRedeem
+      );
+    }
+  }
+
+  /// @notice Updates the value of the long and short sides to account for latest oracle price updates
+  /// and batches all next price actions.
+  /// @dev To prevent front-running only executes on price change from an oracle.
+  /// We assume the function will be called for each market at least once per price update.
+  /// Note Even if not called on every price update, this won't affect security, it will only affect how closely
+  /// the synthetic asset actually tracks the underlying asset.
+  /// @param marketIndex The market index for which to update.
+  function _updateSystemStateInternal(uint32 marketIndex)
+    internal
+    virtual
+    requireMarketExists(marketIndex)
+  {
+    // If a negative int is return this should fail.
+    int256 newAssetPrice = IOracleManager(oracleManagers[marketIndex]).updatePrice();
+
+    uint256 currentMarketIndex = marketUpdateIndex[marketIndex];
+
+    bool assetPriceHasChanged = assetPrice[marketIndex] != newAssetPrice;
+
+    if (assetPriceHasChanged) {
+      MarketSideValueInPaymentToken
+        storage currentMarketSideValueInPaymentToken = marketSideValueInPaymentToken[marketIndex];
+      // Claiming and distributing the yield
+      uint256 newLongPoolValue = currentMarketSideValueInPaymentToken.value_long;
+      uint256 newShortPoolValue = currentMarketSideValueInPaymentToken.value_short;
+
+      uint256 syntheticTokenPrice_inPaymentTokens_long = _getSyntheticTokenPrice(
+        newLongPoolValue,
+        ISyntheticToken(syntheticTokens[marketIndex][true]).totalSupply()
+      );
+      uint256 syntheticTokenPrice_inPaymentTokens_short = _getSyntheticTokenPrice(
+        newShortPoolValue,
+        ISyntheticToken(syntheticTokens[marketIndex][false]).totalSupply()
+      );
+
+      assetPrice[marketIndex] = newAssetPrice;
+
+      currentMarketIndex++;
+      marketUpdateIndex[marketIndex] = currentMarketIndex;
+
+      syntheticToken_priceSnapshot[marketIndex][currentMarketIndex] = SynthPriceInPaymentToken(
+        SafeCast.toUint128(syntheticTokenPrice_inPaymentTokens_long),
+        SafeCast.toUint128(syntheticTokenPrice_inPaymentTokens_short)
+      );
+
+      (
+        int256 long_changeInMarketValue_inPaymentToken,
+        int256 short_changeInMarketValue_inPaymentToken
+      ) = _batchConfirmOutstandingPendingActions(
+          marketIndex,
+          syntheticTokenPrice_inPaymentTokens_long,
+          syntheticTokenPrice_inPaymentTokens_short
+        );
+
+      newLongPoolValue = uint256(
+        int256(newLongPoolValue) + long_changeInMarketValue_inPaymentToken
+      );
+      newShortPoolValue = uint256(
+        int256(newShortPoolValue) + short_changeInMarketValue_inPaymentToken
+      );
+      marketSideValueInPaymentToken[marketIndex] = MarketSideValueInPaymentToken(
+        SafeCast.toUint128(newLongPoolValue),
+        SafeCast.toUint128(newShortPoolValue)
+      );
+
+      emit SystemStateUpdated(
+        marketIndex,
+        currentMarketIndex,
+        newAssetPrice,
+        newLongPoolValue,
+        newShortPoolValue,
+        syntheticTokenPrice_inPaymentTokens_long,
+        syntheticTokenPrice_inPaymentTokens_short
+      );
+    }
   }
 }
