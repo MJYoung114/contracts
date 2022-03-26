@@ -21,10 +21,6 @@ interface IStakerWithDeprecatedMarket {
 @notice deprecated synthetic token for deprecated markets
 */
 contract DeprecatedSyntheticTokenUpgradeable is SyntheticTokenUpgradeable {
-  function stake(uint256 amount) external override {
-    revert("Market deprecated, staking disabled");
-  }
-
   function unstakeAllFor(address[] memory user) external {
     //This function doesn't work currently, exists for future deprecations
     IStakerWithDeprecatedMarket(staker).unstakeAllFromDeprecatedMarket(marketIndex, user, isLong);

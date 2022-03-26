@@ -82,17 +82,6 @@ contract SyntheticTokenUpgradeable is
 
   // TODO - look at some way of not duplicating implementation logic between this and SyntheticToken.sol
 
-  /// @notice Allows users to stake their synthetic tokens to earn Float.
-  /// @dev Core staking logic contained in Staker.sol
-  /// @param amount Amount to stake in wei.
-  function stake(uint256 amount) external virtual override {
-    // NOTE: this is safe, this function will throw "ERC20: transfer
-    //       amount exceeds balance" if amount exceeds users balance.
-    super._transfer(msg.sender, address(staker), amount);
-
-    IStaker(staker).stakeFromUser(msg.sender, amount);
-  }
-
   /*╔══════════════════════════════════════════════════════╗
     ║    FUNCTIONS INHERITED BY ERC20PresetMinterPauser    ║
     ╚══════════════════════════════════════════════════════╝*/

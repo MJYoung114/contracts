@@ -53,13 +53,13 @@ contract Example is ILayerZeroReceiver {
 /// @dev All functions in this file are currently `virtual`. This is NOT to encourage inheritance.
 /// It is merely for convenince when unit testing.
 /// @custom:auditors This contract balances long and short sides.
-contract LongShortSlave is AccessControlledAndUpgradeable, ILayerZeroReceiver {
-  enum MasterChain {
+contract LongShortSlave is AccessControlledAndUpgradeable {
+  enum MasterChains {
     NO_MASTER,
     AVALANCHE,
     POLYGON
   }
-  mapping(uint32 => MasterChain) public MasterChain;
+  mapping(uint32 => MasterChains) public MasterChain;
 
   mapping(uint32 => uint256) public marketUpdateIndex;
   mapping(uint256 => uint256) public latestActionIndex;

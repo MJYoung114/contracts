@@ -10,9 +10,6 @@ pragma solidity 0.8.10;
 interface ISyntheticToken {
   // function MINTER_ROLE() external returns (bytes32);
 
-  /// @notice Allows users to stake their synthetic tokens to earn Float.
-  function stake(uint256) external;
-
   function mint(address, uint256) external;
 
   function totalSupply() external returns (uint256);

@@ -260,7 +260,7 @@ contract StakerInternalStateSetters is Staker {
   {
     uint256 targetMaxNumberSizeBinaryDigits = 257 / exponent;
 
-    // Note this can be optimised, this gets a quick easy to compute safe upper bound, not the actuall upper bound.
+    // Note this can be optimised, this gets a quick easy to compute safe upper bound, not the actual upper bound.
     uint256 targetMaxNumber = 2**targetMaxNumberSizeBinaryDigits;
 
     while (number >> amountOfBitShiftRequired > targetMaxNumber) {

@@ -6,7 +6,6 @@ interface ITokenFactory {
   function createSyntheticToken(
     string calldata syntheticName,
     string calldata syntheticSymbol,
-    address staker,
     uint32 marketIndex,
     bool isLong
   ) external returns (address);

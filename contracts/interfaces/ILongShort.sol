@@ -107,18 +107,6 @@ interface ILongShort {
     view
     returns (uint128 marketSideValueInPaymentTokenLong, uint128 marketSideValueInPaymentTokenShort);
 
-  function setUserTradeTimer(
-    address user,
-    uint32 marketIndex,
-    bool isLong
-  ) external;
-
-  function checkIfUserIsEligibleToTrade(
-    address user,
-    uint32 marketIndex,
-    bool isLong
-  ) external;
-
   function checkIfUserIsEligibleToSendSynth(
     address user,
     uint32 marketIndex,
@@ -159,12 +147,6 @@ interface ILongShort {
   function mintLongNextPrice(uint32 marketIndex, uint256 amount) external;
 
   function mintShortNextPrice(uint32 marketIndex, uint256 amount) external;
-
-  function mintAndStakeNextPrice(
-    uint32 marketIndex,
-    uint256 amount,
-    bool isLong
-  ) external;
 
   function redeemLongNextPrice(uint32 marketIndex, uint256 amount) external;
 

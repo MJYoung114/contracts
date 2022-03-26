@@ -42,19 +42,17 @@ contract TokenFactory is ITokenFactory {
   /// @notice creates and sets up a new synthetic token
   /// @param syntheticName name of the synthetic token
   /// @param syntheticSymbol ticker symbol of the synthetic token
-  /// @param staker address of the staker contract
   /// @param marketIndex market index this synthetic token belongs to
   /// @param isLong boolean denoting if the synthetic token is long or short
   /// @return syntheticToken - address of the created synthetic token
   function createSyntheticToken(
     string calldata syntheticName,
     string calldata syntheticSymbol,
-    address staker,
     uint32 marketIndex,
     bool isLong
   ) external override onlyLongShort returns (address syntheticToken) {
     syntheticToken = address(
-      new SyntheticToken(syntheticName, syntheticSymbol, longShort, staker, marketIndex, isLong)
+      new SyntheticToken(syntheticName, syntheticSymbol, longShort, marketIndex, isLong)
     );
   }
 }
