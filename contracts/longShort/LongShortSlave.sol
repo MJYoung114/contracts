@@ -87,6 +87,19 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
       .paymentTokens;
     latestActionInLatestConfirmedBatch[marketIndex][currentMarketIndex] = pushMessageReceived
       .latestProcessedActionIndex;
+    marketUpdateIndex[marketIndex] = pushMessageReceived.currentUpdateIndex;
+
+    uint256 defaultValue = 1e18;
+
+    emit SystemStateUpdated(
+      marketIndex,
+      currentMarketIndex,
+      defaultValue,
+      defaultValue,
+      defaultValue,
+      syntheticToken_priceSnapshot[marketIndex][currentMarketIndex].price_long,
+      syntheticToken_priceSnapshot[marketIndex][currentMarketIndex].price_short
+    );
   }
 
   /// @notice Allows users to mint synthetic assets for a market. To prevent front-running these mints are executed on the next price update from the oracle.
@@ -102,7 +115,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     internal
     virtual
     override
-    updateSystemStateMarketAndExecuteOutstandingNextPriceSettlements(msg.sender, marketIndex)
+    // updateSystemStateMarketAndExecuteOutstandingNextPriceSettlements(msg.sender, marketIndex)
     noExistingActionsInBatch(marketIndex)
     gemCollecting
   {
@@ -160,6 +173,30 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
   /// @param amount Amount of payment tokens in that token's lowest denominationfor which to mint synthetic assets at next price.
   function mintShortNextPrice(uint32 marketIndex, uint256 amount) external override {
     _mintNextPrice(marketIndex, amount, false);
+  }
+
+  function _executeOutstandingNextPriceSettlements(address user, uint32 marketIndex)
+    internal
+    virtual
+    override
+  {
+    uint256 userCurrentUpdateIndex = userNextPrice_currentActionIndex[marketIndex][user];
+    if (
+      userCurrentUpdateIndex != 0 &&
+      userCurrentUpdateIndex <=
+      latestActionInLatestConfirmedBatch[marketIndex][marketUpdateIndex[marketIndex]]
+    ) {
+      _executeOutstandingNextPriceMints(marketIndex, user, true);
+      _executeOutstandingNextPriceMints(marketIndex, user, false);
+      _executeOutstandingNextPriceRedeems(marketIndex, user, true);
+      _executeOutstandingNextPriceRedeems(marketIndex, user, false);
+      _executeOutstandingNextPriceTokenShifts(marketIndex, user, true);
+      _executeOutstandingNextPriceTokenShifts(marketIndex, user, false);
+
+      userNextPrice_currentUpdateIndex[marketIndex][user] = 0;
+
+      emit ExecuteNextPriceSettlementsUser(user, marketIndex);
+    }
   }
 
   function _executeOutstandingNextPriceMints(
