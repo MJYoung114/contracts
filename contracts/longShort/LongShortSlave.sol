@@ -77,11 +77,12 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     );
 
     uint32 marketIndex = pushMessageReceived.marketIndex;
+
     uint256 currentMarketIndex = pushMessageReceived.currentUpdateIndex;
     syntheticToken_priceSnapshot[marketIndex][currentMarketIndex] = pushMessageReceived
       .paymentTokens;
-
-    marketUpdateIndex[marketIndex] = currentMarketIndex;
+    latestActionInLatestConfirmedBatch[marketIndex][currentMarketIndex] = pushMessageReceived
+      .latestProcessedActionIndex;
   }
 
   /// @notice Allows users to mint synthetic assets for a market. To prevent front-running these mints are executed on the next price update from the oracle.
@@ -178,34 +179,6 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
       ISyntheticToken(syntheticTokens[marketIndex][isLong]).mint(
         user,
         amountSyntheticTokensToMintToUser
-      );
-    }
-  }
-
-  function _executeOutstandingNextPriceRedeems(
-    uint32 marketIndex,
-    address user,
-    bool isLong
-  ) internal virtual {
-    uint256 currentSyntheticTokenRedemptions = userNextPrice_syntheticToken_redeemAmount[
-      marketIndex
-    ][isLong][user];
-    if (currentSyntheticTokenRedemptions > 0) {
-      userNextPrice_syntheticToken_redeemAmount[marketIndex][isLong][user] = 0;
-      uint256 amountPaymentToken_toRedeem = _getAmountPaymentToken(
-        currentSyntheticTokenRedemptions,
-        get_syntheticToken_priceSnapshot_side(
-          marketIndex,
-          isLong,
-          userNextPrice_currentUpdateIndex[marketIndex][user]
-        )
-      );
-
-      ISyntheticToken(syntheticTokens[marketIndex][isLong]).burn(currentSyntheticTokenRedemptions);
-
-      IYieldManager(yieldManagers[marketIndex]).transferPaymentTokensToUser(
-        user,
-        amountPaymentToken_toRedeem
       );
     }
   }
