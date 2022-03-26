@@ -81,11 +81,12 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     );
 
     uint32 marketIndex = pushMessageReceived.marketIndex;
+
     uint256 currentMarketIndex = pushMessageReceived.currentUpdateIndex;
     syntheticToken_priceSnapshot[marketIndex][currentMarketIndex] = pushMessageReceived
       .paymentTokens;
-
-    marketUpdateIndex[marketIndex] = currentMarketIndex;
+    latestActionInLatestConfirmedBatch[marketIndex][currentMarketIndex] = pushMessageReceived
+      .latestProcessedActionIndex;
   }
 
   /// @notice Allows users to mint synthetic assets for a market. To prevent front-running these mints are executed on the next price update from the oracle.
