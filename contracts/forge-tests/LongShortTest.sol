@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.12;
+pragma solidity 0.8.13;
 
 import "@float-capital/ds-test/src/test.sol";
 
@@ -215,10 +215,12 @@ contract LongShortTest is Helpers {
       address(longShortM),
       longShortM.latestActionIndex(1) // MAKE VERY SURE THIS IS THE LATEST VALUE!
     );
+    longShortM.setupMarketCommunication(1, slaveChainId, address(longShortS));
   }
 
   function setUp() public {
-    // setEverythingUp(); // TODO: once you are finished developing this, put it back in the contructor. - it is only here for the luxuary of stack traces (which don't apear from the constructor)
+    // setEverythingUp(); // TODO: once you are finished developing this, put it back in the contructor.
+    //                       - it is only here for the luxuary of stack traces (which don't apear from the constructor)
     freshUserOffset += 10;
     tempUser1 = address(freshUserOffset);
     tempUser2 = address(freshUserOffset + 1);
@@ -236,7 +238,6 @@ contract LongShortTest is Helpers {
   // TODO - do similar update for other actions.
   function _testCreateMinthNthPriceAction() public {
     uint32 marketIndex = 1;
-    uint256 marketUpdateIndexBefore = longShortM.marketUpdateIndex(marketIndex);
     uint256 amountPaymentTokenToMint = 3e20;
 
     cheats.startPrank(tempUser1); // Work as first user for the rest
@@ -262,5 +263,7 @@ contract LongShortTest is Helpers {
 
     uint256 user1BalanceAfter = synthLongMarket1M.balanceOf(tempUser1);
     uint256 user2BalanceAfter = synthLongMarket1M.balanceOf(tempUser2);
+    console.log(user1BalanceBefore, user2BalanceBefore);
+    console.log(user1BalanceAfter, user2BalanceAfter);
   }
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.12;
+pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -30,34 +30,11 @@ contract LongShortMaster is LongShort, ILayerZeroReceiver {
   /* DATA structure */
   mapping(uint32 => uint16) public slaveChainId;
   mapping(uint32 => bytes) public slaveChainLongShortAddressAsBytes;
-  address payable public payableSender;
-  address payable public zroPaymentAddress;
 
   // mapping(uint32 => uint256) public marketUpdateIndex;
   mapping(uint32 => uint256) public latestActionIndex;
 
   mapping(uint32 => mapping(bool => uint256)) public slaveChainsTotalSupply;
-
-  // mapping(uint32 => address) public paymentTokens;
-  // mapping(uint32 => address) public yieldManagers;
-
-  // mapping(uint32 => mapping(bool => address)) public syntheticTokens;
-
-  // /// QUESTION: should this be in the master only?
-  // struct MarketSideValueInPaymentToken {
-  //   // this has a maximum size of `2^128=3.4028237e+38` units of payment token which is amply sufficient for our markets
-  //   uint128 value_long;
-  //   uint128 value_short;
-  // }
-  // mapping(uint32 => MarketSideValueInPaymentToken) public marketSideValueInPaymentToken;
-
-  // struct SynthPriceInPaymentToken {
-  //   // this has a maximum size of `2^128=3.4028237e+38` units of payment token which is amply sufficient for our markets
-  //   uint128 price_long;
-  //   uint128 price_short;
-  // }
-  // mapping(uint32 => mapping(uint256 => SynthPriceInPaymentToken))
-  //   public syntheticToken_priceSnapshot;
 
   /* ══════ User specific ══════ */
   /// NOTE: we are blocking users from doing multiple actions in the same batch
@@ -68,19 +45,22 @@ contract LongShortMaster is LongShort, ILayerZeroReceiver {
   mapping(uint32 => mapping(uint16 => mapping(bool => uint256)))
     public batched_slaves_amountPaymentToken_deposit;
 
-  // mapping(uint32 => mapping(bool => mapping(address => uint256)))
-  //   public userNextPrice_paymentToken_depositAmount;
-  // mapping(uint32 => mapping(bool => mapping(address => uint256)))
-  //   public userNextPrice_syntheticToken_redeemAmount;
-  // mapping(uint32 => mapping(bool => mapping(address => uint256)))
-  //   public userNextPrice_syntheticToken_toShiftAwayFrom_marketSide;
-
   ILayerZeroEndpoint public endpoint;
 
   // constructor mints tokens to the deployer
   /// NOTE: this is insecure still, need to ensure this is setup correctly. Ok for hackathon.
   function setupCommunication(address _layerZeroEndpoint) public adminOnly {
     endpoint = ILayerZeroEndpoint(_layerZeroEndpoint);
+  }
+
+  function setupMarketCommunication(
+    uint32 marketIndex,
+    uint16 _slaveChainId,
+    address slaveChainLongShortAddress
+  ) public adminOnly {
+    // Get the latested update index here too!
+    slaveChainId[marketIndex] = _slaveChainId;
+    slaveChainLongShortAddressAsBytes[marketIndex] = abi.encodePacked(slaveChainLongShortAddress);
   }
 
   function lzReceive(

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.12;
+pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -190,7 +190,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     uint32 marketIndex,
     address user,
     bool isLong
-  ) internal virtual {
+  ) internal virtual override {
     uint256 currentSyntheticTokenRedemptions = userNextPrice_syntheticToken_redeemAmount[
       marketIndex
     ][isLong][user];
@@ -224,6 +224,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
   function _updateSystemStateInternal(uint32 marketIndex)
     internal
     virtual
+    override
     requireMarketExists(marketIndex)
   {
     // If a negative int is return this should fail.

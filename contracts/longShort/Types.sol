@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.12;
+pragma solidity 0.8.13;
 
 import "./template/LongShort.sol";
 
@@ -15,7 +15,7 @@ library Types {
 
   struct MasterPushMessage {
     uint256 latestProcessedActionIndex;
-    uint256 marketIndex;
+    uint32 marketIndex;
     uint256 currentUpdateIndex;
     LongShort.SynthPriceInPaymentToken paymentTokens;
   }

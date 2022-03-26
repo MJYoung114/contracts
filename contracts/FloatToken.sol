@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.12;
+pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/presets/ERC20PresetMinterPauserUpgradeable.sol";
 
@@ -36,7 +36,8 @@ contract FloatToken is
 
   /**
    @notice Initialize the Float Token with relevant
-   @dev This function is called `initialize` to differentiate it from `initialize(string,string)` in the parent contract which should NOT be called to initialize this contract. 
+   @dev This function is called `initialize` to differentiate it from `initialize(string,string)`
+        in the parent contract which should NOT be called to initialize this contract. 
    @param name The name of the Float governance token
    @param symbol The ticker representing the token
    @param stakerAddress The staker contract that controls minting of the token
