@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@chainlink/contracts": "^0.1.7",
+    "@float-capital/ds-test": "^0.0.1",
     "@nomiclabs/ethereumjs-vm": "^4.2.2",
     "@ryyppy/rescript-promise": "^2.1.0",
     "chai": "^4.3.4",
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "@defi-wonderland/smock": "^2.0.1",
+    "@float-capital/hardhat-deploy": "0.9.14-ignore-admin7",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
     "@nomiclabs/hardhat-etherscan": "^2.1.6",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
@@ -54,7 +56,6 @@
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.4.6",
     "hardhat-abi-exporter": "^2.4.0",
-    "@float-capital/hardhat-deploy": "0.9.14-ignore-admin7",
     "hardhat-docgen": "^1.1.1",
     "hardhat-spdx-license-identifier": "^2.0.3",
     "prettier": "^2.3.2",
