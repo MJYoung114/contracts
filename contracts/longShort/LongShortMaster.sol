@@ -153,8 +153,8 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
       destChainId,
       masterChainLongShortAddressAsBytes[marketIndex],
       payload,
-      payable(msg.sender),
-      address(0),
+      payableSender,
+      zroPaymentAddress,
       bytes("")
     );
 

@@ -44,3 +44,5 @@ deployments/*
 !deployments/fantom-testnet
 
 deploymentSummary.json
+
+out
