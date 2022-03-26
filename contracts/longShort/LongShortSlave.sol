@@ -70,7 +70,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     adminOnly
   {
     // Get the latested update index here too!
-    masterChainLongShortAddressAsBytes[marketIndex] = bytes(masterChainLongShortAddress);
+    masterChainLongShortAddressAsBytes[marketIndex] = abi.encodePacked(masterChainLongShortAddress);
   }
 
   modifier noExistingActionsInBatch(uint32 marketIndex) {
@@ -80,6 +80,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
         latestActionInLatestConfirmedBatch[marketIndex][marketUpdateIndex[marketIndex]],
       "can't have multiple actions in the same batch"
     );
+    _;
   }
 
   function lzReceive(
@@ -144,7 +145,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
       bytes("")
     );
 
-    emit NextPriceDeposit(marketIndex, isLong, amount, msg.sender, nextUpdateIndex);
+    emit NextPriceDeposit(marketIndex, isLong, amount, msg.sender, latestActionIndex[marketIndex]);
   }
 
   /// @notice Allows users to mint long synthetic assets for a market. To prevent front-running these mints are executed on the next price update from the oracle.
