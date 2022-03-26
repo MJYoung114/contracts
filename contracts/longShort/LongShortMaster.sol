@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
+import "./Types.sol";
+
 import "../interfaces/ITokenFactory.sol";
 import "../interfaces/ISyntheticToken.sol";
 import "../interfaces/IStaker.sol";
@@ -26,8 +28,8 @@ import "@layerzerolabs/contracts/contracts/interfaces/ILayerZeroEndpoint.sol";
 
 contract LongShortSlave is LongShort, ILayerZeroReceiver {
   /* DATA structure */
-  mapping(uint32 => uint16) public masterChainId;
-  mapping(uint32 => bytes) public masterChainLongShortAddressAsBytes;
+  mapping(uint32 => uint16) public slaveChainId;
+  mapping(uint32 => bytes) public slaveChainLongShortAddressAsBytes;
   address payable public payableSender;
   address payable public zroPaymentAddress;
 
@@ -59,7 +61,10 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
   /// NOTE: we are blocking users from doing multiple actions in the same batch
   mapping(uint32 => mapping(address => uint256)) public userNextPrice_currentActionIndex;
 
-  mapping(uint32 => mapping(uint256 => uint256)) public latestActionInLatestConfirmedBatch;
+  mapping(uint32 => mapping(uint256 => uint256)) public latestActionInNextExecutableBatch;
+
+  mapping(uint32 => mapping(uint16 => mapping(bool => uint256)))
+    public batched_slaves_amountPaymentToken_deposit;
 
   // mapping(uint32 => mapping(bool => mapping(address => uint256)))
   //   public userNextPrice_paymentToken_depositAmount;
@@ -67,26 +72,6 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
   //   public userNextPrice_syntheticToken_redeemAmount;
   // mapping(uint32 => mapping(bool => mapping(address => uint256)))
   //   public userNextPrice_syntheticToken_toShiftAwayFrom_marketSide;
-
-  struct SlavePushMessage {
-    uint256 actionIndex;
-    uint256 depositAmount;
-    uint256 redeemAmount;
-    uint256 shiftAwayAmount;
-    uint32 marketIndex;
-    bool isLong;
-  }
-
-  struct PushYield {
-    uint32 marketIndex;
-    uint256 amount;
-  }
-
-  struct MasterPushMessage {
-    uint256 latestProcessedActionIndex;
-    uint256 marketIndex;
-    SynthPriceInPaymentToken paymentTokens;
-  }
 
   ILayerZeroEndpoint public endpoint;
 
@@ -101,7 +86,31 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     bytes calldata _srcAddress,
     uint64 _nonce,
     bytes calldata _payload
-  ) external override {}
+  ) external override {
+    Types.SlavePushMessage memory pushMessageReceived = abi.decode(
+      _payload,
+      (Types.SlavePushMessage)
+    );
+
+    uint32 marketIndex = pushMessageReceived.marketIndex;
+    //TODO breakdown with shift and redeem amounts
+    if (pushMessageReceived.depositAmount > 0) {
+      batched_amountPaymentToken_deposit[marketIndex][
+        pushMessageReceived.isLong
+      ] += pushMessageReceived.depositAmount;
+    } else if (pushMessageReceived.redeemAmount > 0) {
+      batched_amountSyntheticToken_redeem[marketIndex][
+        pushMessageReceived.isLong
+      ] += pushMessageReceived.redeemAmount;
+    } else if (pushMessageReceived.shiftAwayAmount > 0) {
+      batched_amountSyntheticToken_toShiftAwayFrom_marketSide[marketIndex][
+        pushMessageReceived.isLong
+      ] += pushMessageReceived.shiftAwayAmount;
+    }
+    uint256 nextPriceMarketUpdateIndex = marketUpdateIndex[marketIndex] + 1;
+    latestActionInNextExecutableBatch[marketIndex][nextPriceMarketUpdateIndex] = pushMessageReceived
+      .actionIndex;
+  }
 
   /// @notice Allows users to mint synthetic assets for a market. To prevent front-running these mints are executed on the next price update from the oracle.
   /// @dev Called by external functions to mint either long or short. If a user mints multiple times before a price update, these are treated as a single mint.
@@ -129,7 +138,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
 
     ++latestActionIndex[marketIndex];
 
-    SlavePushMessage memory pushMessage = SlavePushMessage(
+    Types.SlavePushMessage memory pushMessage = Types.SlavePushMessage(
       latestActionIndex[marketIndex],
       amount,
       0,
@@ -139,7 +148,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     );
 
     bytes memory payload = abi.encode(pushMessage);
-    uint16 destChainId = masterChainId[marketIndex];
+    uint16 destChainId = slaveChainId[marketIndex];
 
     // @notice send a LayerZero message to the specified address at a LayerZero endpoint.
     // @param _dstChainId - the destination chain identifier
@@ -151,7 +160,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     // function send(uint16 _dstChainId, bytes calldata _destination, bytes calldata _payload, address payable _refundAddress, address _zroPaymentAddress, bytes calldata _adapterParams) external payable;
     endpoint.send{value: msg.value}(
       destChainId,
-      masterChainLongShortAddressAsBytes[marketIndex],
+      slaveChainLongShortAddressAsBytes[marketIndex],
       payload,
       payableSender,
       zroPaymentAddress,
@@ -173,5 +182,75 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
   /// @param amount Amount of payment tokens in that token's lowest denominationfor which to mint synthetic assets at next price.
   function mintShortNextPrice(uint32 marketIndex, uint256 amount) external override {
     _mintNextPrice(marketIndex, amount, false);
+  }
+
+  function _updateSystemStateInternal(uint32 marketIndex)
+    internal
+    virtual
+    override
+    requireMarketExists(marketIndex)
+  {
+    // If a negative int is return this should fail.
+    int256 newAssetPrice = IOracleManager(oracleManagers[marketIndex]).updatePrice();
+
+    uint256 currentMarketIndex = marketUpdateIndex[marketIndex];
+
+    bool assetPriceHasChanged = assetPrice[marketIndex] != newAssetPrice;
+
+    if (assetPriceHasChanged) {
+      (
+        uint256 newLongPoolValue,
+        uint256 newShortPoolValue
+      ) = _claimAndDistributeYieldThenRebalanceMarket(marketIndex, newAssetPrice);
+
+      uint256 syntheticTokenPrice_inPaymentTokens_long = _getSyntheticTokenPrice(
+        newLongPoolValue,
+        ISyntheticToken(syntheticTokens[marketIndex][true]).totalSupply()
+      );
+      uint256 syntheticTokenPrice_inPaymentTokens_short = _getSyntheticTokenPrice(
+        newShortPoolValue,
+        ISyntheticToken(syntheticTokens[marketIndex][false]).totalSupply()
+      );
+
+      assetPrice[marketIndex] = newAssetPrice;
+
+      currentMarketIndex++;
+      marketUpdateIndex[marketIndex] = currentMarketIndex;
+
+      syntheticToken_priceSnapshot[marketIndex][currentMarketIndex] = SynthPriceInPaymentToken(
+        SafeCast.toUint128(syntheticTokenPrice_inPaymentTokens_long),
+        SafeCast.toUint128(syntheticTokenPrice_inPaymentTokens_short)
+      );
+
+      (
+        int256 long_changeInMarketValue_inPaymentToken,
+        int256 short_changeInMarketValue_inPaymentToken
+      ) = _batchConfirmOutstandingPendingActions(
+          marketIndex,
+          syntheticTokenPrice_inPaymentTokens_long,
+          syntheticTokenPrice_inPaymentTokens_short
+        );
+
+      newLongPoolValue = uint256(
+        int256(newLongPoolValue) + long_changeInMarketValue_inPaymentToken
+      );
+      newShortPoolValue = uint256(
+        int256(newShortPoolValue) + short_changeInMarketValue_inPaymentToken
+      );
+      marketSideValueInPaymentToken[marketIndex] = MarketSideValueInPaymentToken(
+        SafeCast.toUint128(newLongPoolValue),
+        SafeCast.toUint128(newShortPoolValue)
+      );
+
+      emit SystemStateUpdated(
+        marketIndex,
+        currentMarketIndex,
+        newAssetPrice,
+        newLongPoolValue,
+        newShortPoolValue,
+        syntheticTokenPrice_inPaymentTokens_long,
+        syntheticTokenPrice_inPaymentTokens_short
+      );
+    }
   }
 }

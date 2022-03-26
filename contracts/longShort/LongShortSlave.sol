@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
+import "./Types.sol";
+
 import "../interfaces/ITokenFactory.sol";
 import "../interfaces/ISyntheticToken.sol";
 import "../interfaces/IStaker.sol";
@@ -36,26 +38,6 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
   mapping(uint32 => mapping(address => uint256)) public userNextPrice_currentActionIndex;
 
   mapping(uint32 => mapping(uint256 => uint256)) public latestActionInLatestConfirmedBatch;
-
-  struct SlavePushMessage {
-    uint256 actionIndex;
-    uint256 depositAmount;
-    uint256 redeemAmount;
-    uint256 shiftAwayAmount;
-    uint32 marketIndex;
-    bool isLong;
-  }
-
-  struct PushYield {
-    uint32 marketIndex;
-    uint256 amount;
-  }
-
-  struct MasterPushMessage {
-    uint256 latestProcessedActionIndex;
-    uint256 marketIndex;
-    SynthPriceInPaymentToken paymentTokens;
-  }
 
   ILayerZeroEndpoint public endpoint;
 
@@ -103,7 +85,8 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     internal
     virtual
     override
-    // updateSystemStateMarketAndExecuteOutstandingNextPriceSettlements(msg.sender, marketIndex)
+    // updateSystemStatMarketAndExecuteOutstandingNextPriceSettlements(msg.sender, marketIndex)
+    noExistingActionsInBatch(marketIndex)
     gemCollecting
   {
     require(amount > 0, "Mint amount == 0");
@@ -118,7 +101,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
 
     userNextPrice_currentActionIndex[marketIndex][msg.sender] = latestActionIndex[marketIndex];
 
-    SlavePushMessage memory pushMessage = SlavePushMessage(
+    Types.SlavePushMessage memory pushMessage = Types.SlavePushMessage(
       latestActionIndex[marketIndex],
       amount,
       0,
