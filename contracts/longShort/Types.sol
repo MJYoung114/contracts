@@ -15,7 +15,7 @@ library Types {
 
   struct MasterPushMessage {
     uint256 latestProcessedActionIndex;
-    uint256 marketIndex;
+    uint32 marketIndex;
     uint256 currentUpdateIndex;
     LongShort.SynthPriceInPaymentToken paymentTokens;
   }
