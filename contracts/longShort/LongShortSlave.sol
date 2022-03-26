@@ -28,45 +28,14 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
   /* DATA structure */
   mapping(uint32 => uint16) public masterChainId;
   mapping(uint32 => bytes) public masterChainLongShortAddressAsBytes;
-  address payable public payableSender;
-  address payable public zroPaymentAddress;
 
-  // mapping(uint32 => uint256) public marketUpdateIndex;
   mapping(uint32 => uint256) public latestActionIndex;
-
-  // mapping(uint32 => address) public paymentTokens;
-  // mapping(uint32 => address) public yieldManagers;
-
-  // mapping(uint32 => mapping(bool => address)) public syntheticTokens;
-
-  // /// QUESTION: should this be in the master only?
-  // struct MarketSideValueInPaymentToken {
-  //   // this has a maximum size of `2^128=3.4028237e+38` units of payment token which is amply sufficient for our markets
-  //   uint128 value_long;
-  //   uint128 value_short;
-  // }
-  // mapping(uint32 => MarketSideValueInPaymentToken) public marketSideValueInPaymentToken;
-
-  // struct SynthPriceInPaymentToken {
-  //   // this has a maximum size of `2^128=3.4028237e+38` units of payment token which is amply sufficient for our markets
-  //   uint128 price_long;
-  //   uint128 price_short;
-  // }
-  // mapping(uint32 => mapping(uint256 => SynthPriceInPaymentToken))
-  //   public syntheticToken_priceSnapshot;
 
   /* ══════ User specific ══════ */
   /// NOTE: we are blocking users from doing multiple actions in the same batch
   mapping(uint32 => mapping(address => uint256)) public userNextPrice_currentActionIndex;
 
   mapping(uint32 => mapping(uint256 => uint256)) public latestActionInLatestConfirmedBatch;
-
-  // mapping(uint32 => mapping(bool => mapping(address => uint256)))
-  //   public userNextPrice_paymentToken_depositAmount;
-  // mapping(uint32 => mapping(bool => mapping(address => uint256)))
-  //   public userNextPrice_syntheticToken_redeemAmount;
-  // mapping(uint32 => mapping(bool => mapping(address => uint256)))
-  //   public userNextPrice_syntheticToken_toShiftAwayFrom_marketSide;
 
   struct SlavePushMessage {
     uint256 actionIndex;
@@ -96,6 +65,23 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     endpoint = ILayerZeroEndpoint(_layerZeroEndpoint);
   }
 
+  function setupMarketCommunication(uint32 marketIndex, address masterChainLongShortAddress)
+    public
+    adminOnly
+  {
+    // Get the latested update index here too!
+    masterChainLongShortAddressAsBytes[marketIndex] = bytes(masterChainLongShortAddress);
+  }
+
+  modifier noExistingActionsInBatch(uint32 marketIndex) {
+    // For now disable multiple actions in batch
+    require(
+      userNextPrice_currentActionIndex[marketIndex][msg.sender] <=
+        latestActionInLatestConfirmedBatch[marketIndex][marketUpdateIndex[marketIndex]],
+      "can't have multiple actions in the same batch"
+    );
+  }
+
   function lzReceive(
     uint16 _srcChainId,
     bytes calldata _srcAddress,
@@ -116,18 +102,20 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     internal
     virtual
     override
-  // updateSystemStateMarketAndExecuteOutstandingNextPriceSettlements(msg.sender, marketIndex)
-  // gemCollecting
+    // updateSystemStateMarketAndExecuteOutstandingNextPriceSettlements(msg.sender, marketIndex)
+    gemCollecting
   {
     require(amount > 0, "Mint amount == 0");
-    // TODO: add back
+
     _transferPaymentTokensFromUserToYieldManager(marketIndex, amount);
 
     userNextPrice_paymentToken_depositAmount[marketIndex][isLong][msg.sender] += amount;
-    uint256 nextUpdateIndex = marketUpdateIndex[marketIndex] + 1;
-    userNextPrice_currentUpdateIndex[marketIndex][msg.sender] = nextUpdateIndex;
+    // uint256 nextUpdateIndex = marketUpdateIndex[marketIndex] + 1;
+    // userNextPrice_currentUpdateIndex[marketIndex][msg.sender] = nextUpdateIndex;
 
     ++latestActionIndex[marketIndex];
+
+    userNextPrice_currentActionIndex[marketIndex][msg.sender] = latestActionIndex[marketIndex];
 
     SlavePushMessage memory pushMessage = SlavePushMessage(
       latestActionIndex[marketIndex],
@@ -141,20 +129,18 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     bytes memory payload = abi.encode(pushMessage);
     uint16 destChainId = masterChainId[marketIndex];
 
-    // @notice send a LayerZero message to the specified address at a LayerZero endpoint.
-    // @param _dstChainId - the destination chain identifier
-    // @param _destination - the address on destination chain (in bytes). address length/format may vary by chains
-    // @param _payload - a custom bytes payload to send to the destination contract
-    // @param _refundAddress - if the source transaction is cheaper than the amount of value passed, refund the additional amount to this address
-    // @param _zroPaymentAddress - the address of the ZRO token holder who would pay for the transaction
-    // @param _adapterParams - parameters for custom functionality. e.g. receive airdropped native gas from the relayer on destination
-    // function send(uint16 _dstChainId, bytes calldata _destination, bytes calldata _payload, address payable _refundAddress, address _zroPaymentAddress, bytes calldata _adapterParams) external payable;
     endpoint.send{value: msg.value}(
+      // @param _dstChainId - the destination chain identifier
       destChainId,
+      // @param _destination - the address on destination chain (in bytes). address length/format may vary by chains
       masterChainLongShortAddressAsBytes[marketIndex],
+      // @param _payload - a custom bytes payload to send to the destination contract
       payload,
+      // @param _refundAddress - if the source transaction is cheaper than the amount of value passed, refund the additional amount to this address
       payable(msg.sender),
+      // @param _zroPaymentAddress - the address of the ZRO token holder who would pay for the transaction
       address(0),
+      // @param _adapterParams - parameters for custom functionality. e.g. receive airdropped native gas from the relayer on destination
       bytes("")
     );
 
