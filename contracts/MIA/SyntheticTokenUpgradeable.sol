@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.12;
 
 import "../interfaces/IStaker.sol";
 import "../interfaces/ILongShort.sol";
@@ -20,7 +20,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 @dev Logic for price tracking contained in LongShort.sol. 
      The contract inherits from ERC20PresetMinterPauser.sol
 */
-contract SyntheticTokenUpgradeable is
+contract SyntheticTokenUpgradeableBase is
   ISyntheticToken,
   Initializable,
   ERC20Upgradeable,
@@ -158,7 +158,7 @@ contract SyntheticTokenUpgradeable is
     address to,
     uint256 amount
   ) internal virtual override {
-    if (sender != longShort) {
+    if (sender != longShort && sender != address(0)) {
       ILongShort(longShort).executeOutstandingNextPriceSettlementsUser(sender, marketIndex);
     }
     super._beforeTokenTransfer(sender, to, amount);
@@ -179,7 +179,9 @@ contract SyntheticTokenUpgradeable is
         isLong
       );
   }
+}
 
+contract SyntheticTokenUpgradeable is SyntheticTokenUpgradeableBase {
   /// Upgradability - implementation constructor:
   constructor() initializer {}
 }

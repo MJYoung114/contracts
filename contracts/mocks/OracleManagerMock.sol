@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.12;
 
 import "../interfaces/IOracleManager.sol";
 
@@ -43,7 +43,9 @@ contract OracleManagerMock is IOracleManager {
   ///// IMPLEMENTATION ///////////////
   ////////////////////////////////////
 
-  function setPrice(int256 newPrice) public adminOnly {
+  function setPrice(
+    int256 newPrice /*adminOnly*/
+  ) public {
     currentPrice = newPrice;
   }
 

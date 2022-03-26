@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
@@ -31,5 +31,10 @@ contract ERC20MockWithPublicMint is ERC20Mock {
   // Minting is public for easy testing on the mock.
   function mint(uint256 amount) public {
     super._mint(msg.sender, amount);
+  }
+
+  // Minting is public for easy testing on the mock.
+  function mintFor(uint256 amount, address user) public {
+    super._mint(user, amount);
   }
 }
