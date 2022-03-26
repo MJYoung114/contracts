@@ -4,11 +4,11 @@ pragma solidity 0.8.12;
 
 import "@float-capital/ds-test/src/test.sol";
 
-import "../longShort/template/LongShort.sol";
+import "../longShort/LongShortMaster.sol";
+import "../longShort/LongShortSlave.sol";
 import "../FloatCapital_v0.sol";
 import "../Treasury_v0.sol";
 import "../FloatToken.sol";
-import "../staker/template/Staker.sol";
 import "../MIA/SyntheticTokenUpgradeable.sol";
 import "../GEMS.sol";
 
@@ -23,14 +23,16 @@ import "hardhat/console.sol";
 contract LongShortTest is Helpers {
   uint256 public marketFuturePriceIndexLength = 2; //longShortM.futurePriceIndexLength(marketIndex);
 
-  function setEverythingUp() internal {
+  uint16 constant masterChainId = 1;
+  uint16 constant slaveChainId = 2;
+
+  function setEverythingUpMaster() internal {
     // Deploy contracts
     cheats.startPrank(DEPLOYER); // deploy all contracts as deployer
-    longShortM = new LongShort();
+    longShortM = new LongShortMaster();
     floatCapitalM = new FloatCapital_v0();
     treasuryM = new Treasury_v0();
     fltM = new FloatToken();
-    stakerM = new Staker();
     synthLongMarket1M = new SyntheticTokenUpgradeableBase();
     synthShortMarket1M = new SyntheticTokenUpgradeableBase();
     gemsM = new GEMS();
@@ -49,16 +51,6 @@ contract LongShortTest is Helpers {
         987654321 /* token factory unused... */
       ),
       address(stakerM),
-      address(gemsM)
-    );
-    stakerM.initialize(
-      ADMIN,
-      address(longShortM),
-      address(fltM),
-      address(treasuryM),
-      address(floatCapitalM),
-      address(DISCOUNT_SIGNER),
-      250000000000000000,
       address(gemsM)
     );
 
@@ -114,10 +106,115 @@ contract LongShortTest is Helpers {
       /* marketLeverage */
       1e18
     );
+    longShortM.setupCommunication(address(endpointLZ_mock_masterChain));
+  }
+
+  function setEverythingUpSlave() internal {
+    // Deploy contracts
+    cheats.startPrank(DEPLOYER); // deploy all contracts as deployer
+    longShortS = new LongShortSlave();
+    floatCapitalS = new FloatCapital_v0();
+    treasuryS = new Treasury_v0();
+    fltS = new FloatToken();
+    synthLongMarket1S = new SyntheticTokenUpgradeableBase();
+    synthShortMarket1S = new SyntheticTokenUpgradeableBase();
+    gemsS = new GEMS();
+    paymentTokenS = new ERC20MockWithPublicMint("Test Payment Token", "TPT");
+    paymentTokenM.mintFor(1e22, DEPLOYER);
+    paymentTokenM.mintFor(1e22, ADMIN);
+
+    // Configure deployment
+
+    fltM.initialize("TEST Float Token", "tFLT", address(stakerM));
+    treasuryM.initialize(ADMIN, address(paymentTokenM), address(fltM), address(longShortM));
+    gemsM.initialize(ADMIN, address(longShortM), address(stakerM));
+    longShortM.initialize(
+      ADMIN,
+      address(
+        987654321 /* token factory unused... */
+      ),
+      address(stakerM),
+      address(gemsM)
+    );
+    stakerM.initialize(
+      ADMIN,
+      address(longShortM),
+      address(fltM),
+      address(treasuryM),
+      address(floatCapitalM),
+      address(DISCOUNT_SIGNER),
+      250000000000000000,
+      address(gemsM)
+    );
+
+    // A few sanity tests (unimportant)
+    oracleManagerS = new OracleManagerMock(ADMIN, 0);
+    yieldManagerS = new YieldManagerMock(
+      address(longShortM),
+      address(treasuryM),
+      address(paymentTokenM)
+    );
+    paymentTokenM.grantRole(paymentTokenM.MINTER_ROLE(), address(yieldManagerM));
+
+    cheats.stopPrank();
+
+    cheats.startPrank(ADMIN); // Work as admin for the rest
+
+    paymentTokenM.approve(address(longShortM), ~uint256(0));
+    uint32 latestMarket = uint32(longShortM.latestMarket()) + 1;
+
+    synthLongMarket1M.initialize(
+      "M1 MIA Long",
+      "M1ML",
+      address(longShortM),
+      address(stakerM),
+      latestMarket,
+      true
+    );
+    synthShortMarket1M.initialize(
+      "M1 MIA Short",
+      "M1MS",
+      address(longShortM),
+      address(stakerM),
+      latestMarket,
+      false
+    );
+
+    longShortM.createNewSyntheticMarketExternalSyntheticTokens(
+      "Test Market 1",
+      "TM1",
+      address(synthLongMarket1M),
+      address(synthShortMarket1M),
+      address(paymentTokenM),
+      address(oracleManagerM),
+      address(yieldManagerM)
+    );
+
+    longShortM.initializeMarket(
+      latestMarket,
+      /* initialMarketSeedForEachMarketSide */
+      1e18,
+      /* marketTreasurySplitGradient_e18 */
+      1e18,
+      /* marketLeverage */
+      1e18
+    );
+    longShortS.setupCommunication(address(endpointLZ_mock_slaveChain));
   }
 
   constructor() {
-    setEverythingUp();
+    endpointLZ_mock_masterChain = new LZEndpointMock(masterChainId);
+    endpointLZ_mock_slaveChain = new LZEndpointMock(slaveChainId);
+
+    setEverythingUpMaster();
+    setEverythingUpSlave();
+
+    longShortS.setupMarketCommunication(
+      1,
+      masterChainId,
+      address(longShortM),
+      longShortM.latestActionIndex(1) // MAKE VERY SURE THIS IS THE LATEST VALUE!
+    );
   }
 
   function setUp() public {

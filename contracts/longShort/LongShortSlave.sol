@@ -47,12 +47,16 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     endpoint = ILayerZeroEndpoint(_layerZeroEndpoint);
   }
 
-  function setupMarketCommunication(uint32 marketIndex, address masterChainLongShortAddress)
-    public
-    adminOnly
-  {
+  function setupMarketCommunication(
+    uint32 marketIndex,
+    uint16 _masterChainId,
+    address masterChainLongShortAddress,
+    uint256 _latestActionIndex // MAKE VERY SURE THIS IS THE LATEST VALUE!
+  ) public adminOnly {
     // Get the latested update index here too!
     masterChainLongShortAddressAsBytes[marketIndex] = abi.encodePacked(masterChainLongShortAddress);
+    masterChainId[marketIndex] = _masterChainId;
+    latestActionIndex[marketIndex] = _latestActionIndex;
   }
 
   modifier noExistingActionsInBatch(uint32 marketIndex) {

@@ -4,7 +4,8 @@ pragma solidity ^0.8.0;
 
 import "@float-capital/ds-test/src/test.sol";
 
-import "../longShort/template/LongShort.sol";
+import "../longShort/LongShortMaster.sol";
+import "../longShort/LongShortSlave.sol";
 import "../FloatCapital_v0.sol";
 import "../Treasury_v0.sol";
 import "../FloatToken.sol";
@@ -37,7 +38,7 @@ contract Helpers is DSTest {
   address constant DISCOUNT_SIGNER = address(3);
 
   //// MASTER
-  LongShort longShortM;
+  LongShortMaster longShortM;
   FloatCapital_v0 floatCapitalM;
   Treasury_v0 treasuryM;
   FloatToken fltM;
@@ -50,7 +51,7 @@ contract Helpers is DSTest {
   YieldManagerMock yieldManagerM;
 
   ///// SLAVE
-  LongShort longShortS;
+  LongShortSlave longShortS;
   FloatCapital_v0 floatCapitalS;
   Treasury_v0 treasuryS;
   FloatToken fltS;
@@ -62,7 +63,8 @@ contract Helpers is DSTest {
   OracleManagerMock oracleManagerS;
   YieldManagerMock yieldManagerS;
 
-  LZEndpointMock endpointLZ_mock;
+  LZEndpointMock endpointLZ_mock_masterChain;
+  LZEndpointMock endpointLZ_mock_slaveChain;
 
   uint160 freshUserOffset; // using this allows each test to use fresh/new users on the current contracts
   address tempUser1;

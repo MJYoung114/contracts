@@ -26,7 +26,7 @@ import "@layerzerolabs/contracts/contracts/interfaces/ILayerZeroEndpoint.sol";
  **** visit https://float.capital *****
  */
 
-contract LongShortSlave is LongShort, ILayerZeroReceiver {
+contract LongShortMaster is LongShort, ILayerZeroReceiver {
   /* DATA structure */
   mapping(uint32 => uint16) public slaveChainId;
   mapping(uint32 => bytes) public slaveChainLongShortAddressAsBytes;
