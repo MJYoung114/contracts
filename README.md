@@ -1,5 +1,25 @@
 ## General
 
+# Commands to deploy code
+
+```bash
+yarn deploy --network mumbai --tags "layer-zero-deloy"
+yarn deploy --network mumbai2 --tags "layer-zero-deloy"
+yarn deploy --network "fantom-testnet" --tags "layer-zero-deloy"
+
+yarn deploy --network mumbai --tags "layer-zero-setup"
+yarn deploy --network mumbai2 --tags "layer-zero-setup"
+yarn deploy --network "fantom-testnet" --tags "layer-zero-setup"
+
+yarn deploy --network mumbai --tags "test-markets-deploy"
+yarn deploy --network mumbai2 --tags "test-markets-deploy"
+yarn deploy --network "fantom-testnet" --tags "test-markets-deploy"
+
+yarn deploy --network mumbai --tags "test-markets-setup"
+yarn deploy --network mumbai2 --tags "test-markets-setup"
+yarn deploy --network "fantom-testnet" --tags "test-markets-setup"
+```
+
 ## Testing
 
 the current javascript test are going to be refactored into rescript a some point

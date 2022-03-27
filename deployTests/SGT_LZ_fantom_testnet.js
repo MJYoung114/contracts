@@ -11,7 +11,7 @@ var ethUSDPriceFeedAddress = ethers.utils.getAddress("0xB8C458C957a6e6ca7Cc53eD9
 
 var fantomUsdPriceFeedAddress = ethers.utils.getAddress("0xe04676B9A9A2973BCb0D1478b5E1E9098BBB7f3D");
 
-function runFantomTestnetTransactions(param, deploymentArgs) {
+function deployMasterMarkets(param, deploymentArgs) {
   var treasury = param.treasury;
   var paymentToken = param.paymentToken;
   var longShort = param.longShort;
@@ -22,9 +22,7 @@ function runFantomTestnetTransactions(param, deploymentArgs) {
                               console.log("deploying markets");
                               return LetOps.AwaitThen.let_(TestnetDeployHelpers.deployFantomTestnetMarketUpgradeable("Stargate Finance 3x", "3SGT", longShort, staker, treasury, admin, paymentToken, ethUSDPriceFeedAddress, deploymentArgs.deployments, namedAccounts), (function (param) {
                                             return LetOps.AwaitThen.let_(TestnetDeployHelpers.deployFantomTestnetMarketUpgradeable("FANTOM Market 2x", "FTM2", longShort, staker, treasury, admin, paymentToken, fantomUsdPriceFeedAddress, deploymentArgs.deployments, namedAccounts), (function (param) {
-                                                          return LetOps.Await.let_(TestnetDeployHelpers.deployFantomTestnetMarketUpgradeable("Ether Market 2x", "ETH2", longShort, staker, treasury, admin, paymentToken, btcUSDPriceFeedAddress, deploymentArgs.deployments, namedAccounts), (function (param) {
-                                                                        
-                                                                      }));
+                                                          return TestnetDeployHelpers.deployFantomTestnetMarketUpgradeable("Ether Market 2x", "ETH2", longShort, staker, treasury, admin, paymentToken, btcUSDPriceFeedAddress, deploymentArgs.deployments, namedAccounts);
                                                         }));
                                           }));
                             }));
@@ -34,5 +32,5 @@ function runFantomTestnetTransactions(param, deploymentArgs) {
 exports.btcUSDPriceFeedAddress = btcUSDPriceFeedAddress;
 exports.ethUSDPriceFeedAddress = ethUSDPriceFeedAddress;
 exports.fantomUsdPriceFeedAddress = fantomUsdPriceFeedAddress;
-exports.runFantomTestnetTransactions = runFantomTestnetTransactions;
+exports.deployMasterMarkets = deployMasterMarkets;
 /* btcUSDPriceFeedAddress Not a pure module */

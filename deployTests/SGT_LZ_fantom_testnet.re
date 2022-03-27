@@ -21,7 +21,7 @@ type allContracts = {
   syntheticToken: SyntheticToken.t,
 };
 
-let runFantomTestnetTransactions =
+let deployMasterMarkets =
     (
       {longShort, staker, treasury, paymentToken},
       deploymentArgs: Hardhat.hardhatDeployArgument,
@@ -60,20 +60,18 @@ let runFantomTestnetTransactions =
       ~paymentToken: ERC20Mock.t,
       ~oraclePriceFeedAddress=fantomUsdPriceFeedAddress,
     );
-  let%Await _ =
-    deployFantomTestnetMarketUpgradeable(
-      ~syntheticName="Ether Market 2x",
-      ~syntheticSymbol="ETH2",
-      ~longShortInstance=longShort,
-      ~treasuryInstance=treasury,
-      ~stakerInstance=staker,
-      ~deployments=deploymentArgs.deployments,
-      ~namedAccounts,
-      ~admin,
-      ~paymentToken: ERC20Mock.t,
-      ~oraclePriceFeedAddress=btcUSDPriceFeedAddress,
-    );
-  ();
+  deployFantomTestnetMarketUpgradeable(
+    ~syntheticName="Ether Market 2x",
+    ~syntheticSymbol="ETH2",
+    ~longShortInstance=longShort,
+    ~treasuryInstance=treasury,
+    ~stakerInstance=staker,
+    ~deployments=deploymentArgs.deployments,
+    ~namedAccounts,
+    ~admin,
+    ~paymentToken: ERC20Mock.t,
+    ~oraclePriceFeedAddress=btcUSDPriceFeedAddress,
+  );
   // let initialMarkets = [|1, 2, 3|];
   // let longMintAmount = bnFromString("10000000000000000000");
   // let shortMintAmount = longMintAmount->div(bnFromInt(2));

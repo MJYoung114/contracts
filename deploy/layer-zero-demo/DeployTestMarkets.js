@@ -1,6 +1,9 @@
 const {
-  launchSpellMarket,
-} = require("../../deployTests/AvalancheTransactions");
+  launchSlaveMarkets,
+} = require("../../deployTests/SGT_LZ_polygon");
+const {
+  deployMasterMarkets,
+} = require("../../deployTests/SGT_LZ_fantom_testnet");
 const { ethers } = require("hardhat");
 
 const {
@@ -14,7 +17,7 @@ const {
 const { avalancheDaiAddress } = require("../../config");
 const { assert } = require("chai");
 
-const expectedMarketIndex = 4
+// const expectedMarketIndex = 4
 
 let networkToUse = network.name;
 
@@ -33,13 +36,6 @@ module.exports = async (hardhatDeployArguments) => {
   ////////////////////////
   console.log("1");
   let paymentTokenAddress;
-
-  console.log("2");
-  if (networkToUse === "avalanche") {
-    paymentTokenAddress = avalancheDaiAddress;
-  } else {
-    console.error("This command is only available on avalanche");
-  }
 
   // TEST_COLLATERAL_TOKEN = ERC20 token
   console.log("3", TEST_COLLATERAL_TOKEN);
@@ -67,7 +63,7 @@ module.exports = async (hardhatDeployArguments) => {
   console.log("11");
   if (networkToUse === "mumbai" || networkToUse === "mumbai") {
     console.log("mumbai transactions");
-    await launchSpellMarket(
+    await launchSlaveMarkets(
       {
         staker,
         longShort: longShort.connect(admin),
@@ -79,7 +75,7 @@ module.exports = async (hardhatDeployArguments) => {
     );
   } else if (networkToUse === "fantom-testnet") {
     console.log("fantom TESTNET transactions");
-    await launchSpellMarket(
+    await deployMasterMarkets(
       {
         staker,
         longShort: longShort.connect(admin),
@@ -94,29 +90,6 @@ module.exports = async (hardhatDeployArguments) => {
   }
 
   console.log("Deployment complete");
-
-  // Do some deployment validation.
-  let marketExists = await longShort.marketExists(expectedMarketIndex);
-  console.log("marketExists", marketExists);
-  assert.equal(marketExists, true);
-  let assetPrice = await longShort.assetPrice(expectedMarketIndex);
-  console.log("assetPrice", assetPrice);
-  let marketUpdateIndex = await longShort.marketUpdateIndex(expectedMarketIndex);
-  console.log("marketUpdateIndex", marketUpdateIndex.toString());
-  let marketTreasurySplitGradient_e18 = await longShort.marketTreasurySplitGradient_e18(expectedMarketIndex);
-  console.log("marketTreasurySplitGradient_e18", marketTreasurySplitGradient_e18.toString());
-  let marketLeverage_e18 = await longShort.marketLeverage_e18(expectedMarketIndex);
-  console.log("marketLeverage_e18", marketLeverage_e18.toString());
-  let paymentTokens = await longShort.paymentTokens(expectedMarketIndex);
-  console.log("paymentTokens", paymentTokens);
-  let yieldManagers = await longShort.yieldManagers(expectedMarketIndex);
-  console.log("yieldManagers", yieldManagers);
-  let oracleManagers = await longShort.oracleManagers(expectedMarketIndex);
-  console.log("oracleManagers", oracleManagers);
-  let fundingRateMultiplier_e18 = await longShort.fundingRateMultiplier_e18(expectedMarketIndex);
-  console.log("fundingRateMultiplier_e18", fundingRateMultiplier_e18.toString());
-  let marketSideValueInPaymentToken = await longShort.marketSideValueInPaymentToken(expectedMarketIndex);
-  console.log("marketSideValueInPaymentToken", marketSideValueInPaymentToken.toString());
 };
 
-module.exports.tags = ["SGT"];
+module.exports.tags = ["test-markets-deploy"];
