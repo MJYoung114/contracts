@@ -74,7 +74,7 @@ function deployFlipp3ningPolygon(longShortInstance, stakerInstance, treasuryInst
                                                               btcMarketCapOraclePriceFeedAddress
                                                             ]
                                                           }), (function (oracleManager) {
-                                                          console.log("a.1");
+                                                          console.log("222a.1");
                                                           console.log("a.3");
                                                           return LetOps.AwaitThen.let_(deployments.deploy("YieldManagerF3", {
                                                                           from: namedAccounts.deployer,
@@ -174,7 +174,7 @@ function deploy3TH_Polygon(longShortInstance, stakerInstance, treasuryInstance, 
                                                               ethUSDPriceFeedAddress
                                                             ]
                                                           }), (function (oracleManager) {
-                                                          console.log("a.1");
+                                                          console.log("333a.1");
                                                           console.log("a.3");
                                                           return LetOps.AwaitThen.let_(deployments.deploy("YieldManager3TH", {
                                                                           from: namedAccounts.deployer,
@@ -275,7 +275,7 @@ function deployMarketOnPolygon(longShortInstance, stakerInstance, treasuryInstan
                                                               chainlinkOricleFeedAddress
                                                             ]
                                                           }), (function (oracleManager) {
-                                                          console.log("a.1");
+                                                          console.log("444a.1");
                                                           console.log("a.3");
                                                           return LetOps.AwaitThen.let_(deployments.deploy("YieldManager" + syntheticSymbol, {
                                                                           from: namedAccounts.deployer,
@@ -327,6 +327,20 @@ function deployMarketOnPolygon(longShortInstance, stakerInstance, treasuryInstan
 }
 
 function deployAaveDAIYieldManager(deployments, syntheticSymbol, deployer, longShortInstanceAddress, treasuryInstanceAddress, paymentTokenAddress, admin) {
+  var aavePoolAddressProviderPolygon = "0xb6A86025F0FE1862B372cb0ca18CE3EDe02A318f";
+  var aDaiPolygon = "0x47AFa96Cdc9fAb46904A55a6ad4bf6660B53c38a";
+  var aaveIncentivesControllerPolygon = "0x01D83Fe6A10D2f2B7AF17034343746188272cAc9";
+  console.log("yield manager");
+  console.log([
+        longShortInstanceAddress,
+        treasuryInstanceAddress,
+        paymentTokenAddress,
+        aDaiPolygon,
+        aavePoolAddressProviderPolygon,
+        aaveIncentivesControllerPolygon,
+        0,
+        admin.address
+      ]);
   return deployments.deploy("YieldManager" + syntheticSymbol, {
               from: deployer,
               contract: "DefaultYieldManagerAave",
@@ -339,9 +353,9 @@ function deployAaveDAIYieldManager(deployments, syntheticSymbol, deployer, longS
                     longShortInstanceAddress,
                     treasuryInstanceAddress,
                     paymentTokenAddress,
-                    "0x47AFa96Cdc9fAb46904A55a6ad4bf6660B53c38a",
-                    "0xb6A86025F0FE1862B372cb0ca18CE3EDe02A318f",
-                    "0x01D83Fe6A10D2f2B7AF17034343746188272cAc9",
+                    aDaiPolygon,
+                    aavePoolAddressProviderPolygon,
+                    aaveIncentivesControllerPolygon,
                     0,
                     admin.address
                   ]
@@ -372,6 +386,7 @@ function deployCompoundDAIYieldManager(deployments, syntheticSymbol, deployer, l
 }
 
 function deployAvalancheMarket(longShortInstance, stakerInstance, treasuryInstance, admin, paymentToken, oraclePriceFeedAddress, deployments, namedAccounts, syntheticName, syntheticSymbol, fundingRateMultiplier, marketLeverage, expectedMarketIndex, yieldManagerVariant) {
+  console.log("unused", oraclePriceFeedAddress, yieldManagerVariant);
   return LetOps.AwaitThen.let_(longShortInstance.latestMarket(), (function (latestMarket) {
                 var newMarketIndex = latestMarket + 1 | 0;
                 if (newMarketIndex !== expectedMarketIndex) {
@@ -415,41 +430,18 @@ function deployAvalancheMarket(longShortInstance, stakerInstance, treasuryInstan
                                                 }
                                               }
                                             }), (function (syntheticTokenLong) {
-                                            console.log("Oracle manager!", oraclePriceFeedAddress);
-                                            return LetOps.AwaitThen.let_(deployments.deploy("OracleManager" + syntheticSymbol, {
-                                                            from: namedAccounts.deployer,
-                                                            log: true,
-                                                            contract: "OracleManagerChainlink",
-                                                            args: [
-                                                              namedAccounts.admin,
-                                                              oraclePriceFeedAddress
-                                                            ]
-                                                          }), (function (oracleManager) {
-                                                          console.log("a.1");
-                                                          console.log("a.2");
-                                                          console.log("a.3");
-                                                          return LetOps.AwaitThen.let_(yieldManagerVariant ? deployCompoundDAIYieldManager(deployments, syntheticSymbol, namedAccounts.deployer, longShortInstance.address, treasuryInstance.address, paymentToken.address, admin, yieldManagerVariant._0) : deployAaveDAIYieldManager(deployments, syntheticSymbol, namedAccounts.deployer, longShortInstance.address, treasuryInstance.address, paymentToken.address, admin), (function (yieldManager) {
-                                                                        console.log("a.4");
-                                                                        console.log([
-                                                                              yieldManager.address,
-                                                                              syntheticTokenLong.address,
-                                                                              syntheticTokenShort.address
-                                                                            ]);
-                                                                        return LetOps.AwaitThen.let_(longShortInstance.connect(admin).createNewSyntheticMarketExternalSyntheticTokens(syntheticName, syntheticSymbol, syntheticTokenLong.address, syntheticTokenShort.address, paymentToken.address, oracleManager.address, yieldManager.address), (function (param) {
-                                                                                      console.log("a.5");
-                                                                                      var kInitialMultiplier = Globals.bnFromString("2000000000000000000");
-                                                                                      var kPeriod = Globals.bnFromInt(5184000);
-                                                                                      console.log("a.6");
-                                                                                      var unstakeFee_e18 = Globals.bnFromString("5000000000000000");
-                                                                                      var initialMarketSeedForEachMarketSide = Globals.bnFromString("1000000000000000000");
-                                                                                      return LetOps.AwaitThen.let_(paymentToken.connect(admin).approve(longShortInstance.address, Globals.mul(initialMarketSeedForEachMarketSide, Globals.bnFromInt(3))), (function (param) {
-                                                                                                    console.log("a.7");
-                                                                                                    return LetOps.AwaitThen.let_(longShortInstance.connect(admin).initializeMarket(newMarketIndex, kInitialMultiplier, kPeriod, unstakeFee_e18, initialMarketSeedForEachMarketSide, Globals.bnFromInt(5), Globals.bnFromInt(0), CONSTANTS.tenToThe18, Globals.mul(Globals.bnFromInt(marketLeverage), CONSTANTS.tenToThe18)), (function (param) {
-                                                                                                                  console.log("market launched, setting the funding rate");
-                                                                                                                  return longShortInstance.connect(admin).changeMarketFundingRateMultiplier(newMarketIndex, fundingRateMultiplier);
-                                                                                                                }));
-                                                                                                  }));
-                                                                                    }));
+                                            console.log("before deploy!!");
+                                            console.log("a.4");
+                                            return LetOps.AwaitThen.let_(longShortInstance.connect(admin).createNewSyntheticMarketExternalSyntheticTokens(syntheticName, syntheticSymbol, syntheticTokenLong.address, syntheticTokenShort.address, paymentToken.address, "0x11B9C1a257751692509D363f197433D8fcDB106f", "0x4c48599575aFF3C677f62611D84e4018beAcA39f"), (function (param) {
+                                                          console.log("a.5");
+                                                          Globals.bnFromString("2000000000000000000");
+                                                          Globals.bnFromInt(5184000);
+                                                          console.log("a.6");
+                                                          Globals.bnFromString("5000000000000000");
+                                                          var initialMarketSeedForEachMarketSide = Globals.bnFromString("1000000000000000000");
+                                                          return LetOps.Await.let_(paymentToken.connect(admin).approve(longShortInstance.address, Globals.mul(initialMarketSeedForEachMarketSide, Globals.bnFromInt(3))), (function (param) {
+                                                                        console.log("a.7");
+                                                                        
                                                                       }));
                                                         }));
                                           }));

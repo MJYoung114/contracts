@@ -183,28 +183,26 @@ let deployTestnetMarketUpgradeableCore =
   let initialMarketSeedForEachMarketSide =
     bnFromString("1000000000000000000");
 
-  let%AwaitThen _ =
-    paymentToken
-    ->ContractHelpers.connect(~address=admin)
-    ->ERC20Mock.approve(
-        ~spender=longShortInstance.address,
-        ~amount=initialMarketSeedForEachMarketSide->mul(bnFromInt(3)),
-      );
-
-  Js.log("a.7");
-  longShortInstance
+  paymentToken
   ->ContractHelpers.connect(~address=admin)
-  ->LongShort.initializeMarket(
-      ~marketIndex=newMarketIndex,
-      ~kInitialMultiplier,
-      ~kPeriod,
-      ~unstakeFee_e18, // 50 basis point unstake fee
-      ~initialMarketSeedForEachMarketSide,
-      ~balanceIncentiveCurve_exponent=bnFromInt(5),
-      ~balanceIncentiveCurve_equilibriumOffset=bnFromInt(0),
-      ~marketTreasurySplitGradient_e18=bnFromInt(1),
-      ~marketLeverage=CONSTANTS.tenToThe18,
+  ->ERC20Mock.approve(
+      ~spender=longShortInstance.address,
+      ~amount=initialMarketSeedForEachMarketSide->mul(bnFromInt(3)),
     );
+  // Js.log("a.7");
+  // longShortInstance
+  // ->ContractHelpers.connect(~address=admin)
+  // ->LongShort.initializeMarket(
+  //     ~marketIndex=newMarketIndex,
+  //     ~kInitialMultiplier,
+  //     ~kPeriod,
+  //     ~unstakeFee_e18, // 50 basis point unstake fee
+  //     ~initialMarketSeedForEachMarketSide,
+  //     ~balanceIncentiveCurve_exponent=bnFromInt(5),
+  //     ~balanceIncentiveCurve_equilibriumOffset=bnFromInt(0),
+  //     ~marketTreasurySplitGradient_e18=bnFromInt(1),
+  //     ~marketLeverage=CONSTANTS.tenToThe18,
+  //   );
 };
 
 let deployMumbaiMarketUpgradeable =
@@ -231,7 +229,7 @@ let deployMumbaiMarketUpgradeable =
       },
     );
 
-  Js.log("a.1");
+  Js.log("555a.1");
 
   let aavePoolAddressProviderMumbai = "0x178113104fEcbcD7fF8669a0150721e231F0FD4B";
   let mumbaiADai = "0x639cB7b21ee2161DF9c882483C9D55c90c20Ca3e";
@@ -302,7 +300,7 @@ let deployFantomTestnetMarketUpgradeable =
       },
     );
 
-  Js.log("a.1");
+  Js.log("666a.1");
 
   let aavePoolAddressProviderFantomTestnet = "0xD90db1ca5A6e9873BCD9B0279AE038272b656728";
   let fantomTestnetADai = "0xbAA97949f28899Fc7E89ff67A033e9f46fbA0846";

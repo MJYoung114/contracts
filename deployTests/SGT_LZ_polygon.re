@@ -44,29 +44,29 @@ let launchSlaveMarkets =
   let admin = loadedAccounts->Array.getUnsafe(1);
 
   Js.log("deploying markets");
-  let syntheticName = "Stargate Finance 3x";
-  let syntheticSymbol = "3SGT";
+  // let syntheticName = "Stargate Finance 3x";
+  // let syntheticSymbol = "3SGT";
 
-  let%AwaitThen _ =
-    deployAvalancheMarket(
-      ~longShortInstance=longShort,
-      ~treasuryInstance=treasury,
-      ~stakerInstance=staker,
-      ~deployments=deploymentArgs.deployments,
-      ~namedAccounts,
-      ~admin,
-      ~paymentToken: ERC20Mock.t,
-      ~oraclePriceFeedAddress=avaxOraclePriceFeedAddress,
-      ~syntheticName,
-      ~syntheticSymbol,
-      ~fundingRateMultiplier=CONSTANTS.tenToThe18,
-      ~marketLeverage=3,
-      ~expectedMarketIndex=1,
-      ~yieldManagerVariant=AaveDAI,
-    );
+  // let%AwaitThen _ =
+  //   deployAvalancheMarket(
+  //     ~longShortInstance=longShort,
+  //     ~treasuryInstance=treasury,
+  //     ~stakerInstance=staker,
+  //     ~deployments=deploymentArgs.deployments,
+  //     ~namedAccounts,
+  //     ~admin,
+  //     ~paymentToken: ERC20Mock.t,
+  //     ~oraclePriceFeedAddress=avaxOraclePriceFeedAddress,
+  //     ~syntheticName,
+  //     ~syntheticSymbol,
+  //     ~fundingRateMultiplier=CONSTANTS.tenToThe18,
+  //     ~marketLeverage=3,
+  //     ~expectedMarketIndex=1,
+  //     ~yieldManagerVariant=AaveDAI,
+  //   );
 
   let syntheticName = "AVAX Market 2x";
-  let syntheticSymbol = "2ETH";
+  let syntheticSymbol = "2AVAX";
 
   let%AwaitThen _ =
     deployAvalancheMarket(
@@ -87,7 +87,7 @@ let launchSlaveMarkets =
     );
 
   let syntheticName = "Ether Market 2x";
-  let syntheticSymbol = "ETH2";
+  let syntheticSymbol = "2ETH";
 
   deployAvalancheMarket(
     ~longShortInstance=longShort,

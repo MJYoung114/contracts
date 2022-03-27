@@ -34,23 +34,23 @@ let deployMasterMarkets =
 
   Js.log("deploying markets");
 
+  // let%AwaitThen _ =
+  //   deployFantomTestnetMarketUpgradeable(
+  //     ~syntheticName="Stargate Finance 3x",
+  //     ~syntheticSymbol="3SGT",
+  //     ~longShortInstance=longShort,
+  //     ~treasuryInstance=treasury,
+  //     ~stakerInstance=staker,
+  //     ~deployments=deploymentArgs.deployments,
+  //     ~namedAccounts,
+  //     ~admin,
+  //     ~paymentToken: ERC20Mock.t,
+  //     ~oraclePriceFeedAddress=ethUSDPriceFeedAddress,
+  //   );
   let%AwaitThen _ =
     deployFantomTestnetMarketUpgradeable(
-      ~syntheticName="Stargate Finance 3x",
-      ~syntheticSymbol="3SGT",
-      ~longShortInstance=longShort,
-      ~treasuryInstance=treasury,
-      ~stakerInstance=staker,
-      ~deployments=deploymentArgs.deployments,
-      ~namedAccounts,
-      ~admin,
-      ~paymentToken: ERC20Mock.t,
-      ~oraclePriceFeedAddress=ethUSDPriceFeedAddress,
-    );
-  let%AwaitThen _ =
-    deployFantomTestnetMarketUpgradeable(
-      ~syntheticName="FANTOM Market 2x",
-      ~syntheticSymbol="FTM2",
+      ~syntheticName="AVAX Market 2x",
+      ~syntheticSymbol="2AVAX",
       ~longShortInstance=longShort,
       ~treasuryInstance=treasury,
       ~stakerInstance=staker,

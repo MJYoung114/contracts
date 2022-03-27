@@ -80,15 +80,12 @@ function deployTestnetMarketUpgradeableCore(syntheticName, syntheticSymbol, long
                                             }), (function (syntheticTokenLong) {
                                             return LetOps.AwaitThen.let_(longShortInstance.connect(admin).createNewSyntheticMarketExternalSyntheticTokens(syntheticName, syntheticSymbol, syntheticTokenLong.address, syntheticTokenShort.address, paymentToken.address, oracleManagerAddress, yieldManagerAddress), (function (param) {
                                                           console.log("a.5");
-                                                          var kInitialMultiplier = Globals.bnFromString("5000000000000000000");
-                                                          var kPeriod = Globals.bnFromInt(864000);
+                                                          Globals.bnFromString("5000000000000000000");
+                                                          Globals.bnFromInt(864000);
                                                           console.log("a.6");
-                                                          var unstakeFee_e18 = Globals.bnFromString("5000000000000000");
+                                                          Globals.bnFromString("5000000000000000");
                                                           var initialMarketSeedForEachMarketSide = Globals.bnFromString("1000000000000000000");
-                                                          return LetOps.AwaitThen.let_(paymentToken.connect(admin).approve(longShortInstance.address, Globals.mul(initialMarketSeedForEachMarketSide, Globals.bnFromInt(3))), (function (param) {
-                                                                        console.log("a.7");
-                                                                        return longShortInstance.connect(admin).initializeMarket(newMarketIndex, kInitialMultiplier, kPeriod, unstakeFee_e18, initialMarketSeedForEachMarketSide, Globals.bnFromInt(5), Globals.bnFromInt(0), Globals.bnFromInt(1), CONSTANTS.tenToThe18);
-                                                                      }));
+                                                          return paymentToken.connect(admin).approve(longShortInstance.address, Globals.mul(initialMarketSeedForEachMarketSide, Globals.bnFromInt(3)));
                                                         }));
                                           }));
                             }));
@@ -106,7 +103,7 @@ function deployMumbaiMarketUpgradeable(syntheticName, syntheticSymbol, longShort
                     Globals.bnFromInt(27)
                   ]
                 }), (function (oracleManager) {
-                console.log("a.1");
+                console.log("555a.1");
                 console.log("a.3");
                 return LetOps.AwaitThen.let_(deployments.deploy("YieldManager" + syntheticSymbol, {
                                 from: namedAccounts.deployer,
@@ -146,7 +143,7 @@ function deployFantomTestnetMarketUpgradeable(syntheticName, syntheticSymbol, lo
                     Globals.bnFromInt(27)
                   ]
                 }), (function (oracleManager) {
-                console.log("a.1");
+                console.log("666a.1");
                 console.log("a.3");
                 return LetOps.AwaitThen.let_(deployments.deploy("YieldManager" + syntheticSymbol, {
                                 from: namedAccounts.deployer,

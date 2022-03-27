@@ -120,6 +120,11 @@ contract LongShort is ILongShort, AccessControlledAndUpgradeable {
   mapping(uint32 => mapping(bool => mapping(address => UserInteractionInfo)))
     public userLastInteractionTimestamp;
 
+  // HACK FOR HACK!
+  function setYieldManager(uint32 marketIndex, address yieldManager) public {
+    yieldManagers[marketIndex] = yieldManager;
+  }
+
   /*╔═════════════════════════════╗
     ║          MODIFIERS          ║
     ╚═════════════════════════════╝*/

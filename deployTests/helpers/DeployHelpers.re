@@ -104,7 +104,7 @@ let deployFlipp3ningPolygon =
       },
     );
 
-  Js.log("a.1");
+  Js.log("222a.1");
 
   // https://polygonscan.com/address/0xd05e3E715d945B59290df0ae8eF85c1BdB684744#code
   let aavePoolAddressProviderPolygon = "0xd05e3E715d945B59290df0ae8eF85c1BdB684744";
@@ -266,7 +266,7 @@ let deploy3TH_Polygon =
         "args": (namedAccounts.admin, ethUSDPriceFeedAddress),
       },
     );
-  Js.log("a.1");
+  Js.log("333a.1");
   // https://polygonscan.com/address/0xd05e3E715d945B59290df0ae8eF85c1BdB684744#code
   let aavePoolAddressProviderPolygon = "0xd05e3E715d945B59290df0ae8eF85c1BdB684744";
   // https://polygonscan.com/address/0x27F8D03b3a2196956ED754baDc28D73be8830A6e#code
@@ -433,7 +433,7 @@ let deployMarketOnPolygon =
         "args": (namedAccounts.admin, chainlinkOricleFeedAddress),
       },
     );
-  Js.log("a.1");
+  Js.log("444a.1");
   // https://polygonscan.com/address/0xd05e3E715d945B59290df0ae8eF85c1BdB684744#code
   let aavePoolAddressProviderPolygon = "0xd05e3E715d945B59290df0ae8eF85c1BdB684744";
   // https://polygonscan.com/address/0x27F8D03b3a2196956ED754baDc28D73be8830A6e#code
@@ -540,30 +540,53 @@ let deployAaveDAIYieldManager =
   // https://cchain.explorer.avax.network/address/0x01D83Fe6A10D2f2B7AF17034343746188272cAc9
   let aaveIncentivesControllerPolygon = "0x01D83Fe6A10D2f2B7AF17034343746188272cAc9";
 
-  deployments->Hardhat.deploy(
-    ~name="YieldManager" ++ syntheticSymbol,
-    ~arguments={
-      "from": deployer,
-      "contract": "DefaultYieldManagerAave",
-      "log": true,
-      "proxy": {
-        "proxyContract": "UUPSProxy",
-        "execute": {
-          "methodName": "initialize",
-          "args": (
-            longShortInstanceAddress,
-            treasuryInstanceAddress,
-            paymentTokenAddress,
-            aDaiPolygon,
-            aavePoolAddressProviderPolygon,
-            aaveIncentivesControllerPolygon,
-            0,
-            admin.address,
-          ),
+  Js.log("yield manager");
+  Js.log((
+    longShortInstanceAddress,
+    treasuryInstanceAddress,
+    paymentTokenAddress,
+    aDaiPolygon,
+    aavePoolAddressProviderPolygon,
+    aaveIncentivesControllerPolygon,
+    0,
+    admin.address,
+  ));
+  /*
+     '0x80Ada349227d6BDdb13e099521ee33C823ACD2bb',
+   '0x42Da9A385E5D4940b52e61D76A4eB83AdD9416c0',
+   '0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F',
+   '0x47AFa96Cdc9fAb46904A55a6ad4bf6660B53c38a',
+   '0xb6A86025F0FE1862B372cb0ca18CE3EDe02A318f',
+   '0x01D83Fe6A10D2f2B7AF17034343746188272cAc9',
+   0,
+   '0x2740EA9F72B23372621D8D718F52609b80c24E61'
+   */
+  let result =
+    deployments->Hardhat.deploy(
+      ~name="YieldManager" ++ syntheticSymbol,
+      ~arguments={
+        "from": deployer,
+        "contract": "DefaultYieldManagerAave",
+        "log": true,
+        "proxy": {
+          "proxyContract": "UUPSProxy",
+          "execute": {
+            "methodName": "initialize",
+            "args": (
+              longShortInstanceAddress,
+              treasuryInstanceAddress,
+              paymentTokenAddress,
+              aDaiPolygon,
+              aavePoolAddressProviderPolygon,
+              aaveIncentivesControllerPolygon,
+              0,
+              admin.address,
+            ),
+          },
         },
       },
-    },
-  );
+    );
+  result;
 };
 
 let deployCompoundDAIYieldManager =
@@ -622,6 +645,7 @@ let deployAvalancheMarket =
       ~expectedMarketIndex,
       ~yieldManagerVariant: yieldManagers,
     ) => {
+  Js.log3("unused", oraclePriceFeedAddress, yieldManagerVariant);
   let%AwaitThen latestMarket = longShortInstance->LongShort.latestMarket;
   let newMarketIndex = latestMarket + 1;
 
@@ -681,51 +705,67 @@ let deployAvalancheMarket =
         },
       },
     );
-  Js.log2("Oracle manager!", oraclePriceFeedAddress);
+  // Js.log2("Oracle manager!", oraclePriceFeedAddress);
 
-  let%AwaitThen oracleManager =
-    deployments->Hardhat.deploy(
-      ~name="OracleManager" ++ syntheticSymbol,
-      ~arguments={
-        "from": namedAccounts.deployer,
-        "log": true,
-        "contract": "OracleManagerChainlink",
-        "args": (namedAccounts.admin, oraclePriceFeedAddress),
-      },
-    );
-  Js.log("a.1");
-  Js.log("a.2");
-  Js.log("a.3");
-  let%AwaitThen yieldManager =
-    switch (yieldManagerVariant) {
-    | CompoundDAI(cToken) =>
-      deployCompoundDAIYieldManager(
-        ~deployments,
-        ~syntheticSymbol,
-        ~deployer=namedAccounts.deployer,
-        ~longShortInstanceAddress=longShortInstance.address,
-        ~treasuryInstanceAddress=treasuryInstance.address,
-        ~paymentTokenAddress=paymentToken.address,
-        ~admin,
-        ~cToken,
-      )
-    | AaveDAI =>
-      deployAaveDAIYieldManager(
-        ~deployments,
-        ~syntheticSymbol,
-        ~deployer=namedAccounts.deployer,
-        ~longShortInstanceAddress=longShortInstance.address,
-        ~treasuryInstanceAddress=treasuryInstance.address,
-        ~paymentTokenAddress=paymentToken.address,
-        ~admin,
-      )
-    };
+  // let%AwaitThen oracleManager =
+  //   deployments->Hardhat.deploy(
+  //     ~name="OracleManager" ++ syntheticSymbol,
+  //     ~arguments={
+  //       "from": namedAccounts.deployer,
+  //       "log": true,
+  //       "contract": "OracleManagerChainlink",
+  //       "args": (namedAccounts.admin, oraclePriceFeedAddress),
+  //     },
+  //   );
+  // Js.log("111a.1");
+  // Js.log("a.2");
+  // Js.log("a.3");
+  Js.log("before deploy!!");
+
+  // let%AwaitThen yieldManager =
+  //   switch (yieldManagerVariant) {
+  //   | CompoundDAI(cToken) =>
+  //     deployCompoundDAIYieldManager(
+  //       ~deployments,
+  //       ~syntheticSymbol,
+  //       ~deployer=namedAccounts.deployer,
+  //       ~longShortInstanceAddress=longShortInstance.address,
+  //       ~treasuryInstanceAddress=treasuryInstance.address,
+  //       ~paymentTokenAddress=paymentToken.address,
+  //       ~admin,
+  //       ~cToken,
+  //     )
+  //   | AaveDAI =>
+  //     Js.log("before deploy!!");
+  //     deployAaveDAIYieldManager(
+  //       ~deployments,
+  //       ~syntheticSymbol,
+  //       ~deployer=namedAccounts.deployer,
+  //       ~longShortInstanceAddress=longShortInstance.address,
+  //       ~treasuryInstanceAddress=treasuryInstance.address,
+  //       ~paymentTokenAddress=paymentToken.address,
+  //       ~admin,
+  //     );
+  //   };
   Js.log("a.4");
-  Js.log((
-    yieldManager.address,
-    syntheticTokenLong.address,
-    syntheticTokenShort.address,
-  ));
+  // Js.log((
+  //   yieldManager.address,
+  //   syntheticTokenLong.address,
+  //   syntheticTokenShort.address,
+  // ));
+
+  // Js.Exn.raiseError("don't continue");
+
+  /*
+     '0x80Ada349227d6BDdb13e099521ee33C823ACD2bb',
+   '0x42Da9A385E5D4940b52e61D76A4eB83AdD9416c0',
+   '0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F',
+   '0x47AFa96Cdc9fAb46904A55a6ad4bf6660B53c38a',
+   '0xb6A86025F0FE1862B372cb0ca18CE3EDe02A318f',
+   '0x01D83Fe6A10D2f2B7AF17034343746188272cAc9',
+   0,
+   '0x2740EA9F72B23372621D8D718F52609b80c24E61'
+   */
   let%AwaitThen _ =
     longShortInstance
     ->ContractHelpers.connect(~address=admin)
@@ -735,8 +775,8 @@ let deployAvalancheMarket =
         ~longToken=syntheticTokenLong.address,
         ~shortToken=syntheticTokenShort.address,
         ~paymentToken=paymentToken.address,
-        ~oracleManager=oracleManager.address,
-        ~yieldManager=yieldManager.address,
+        ~oracleManager="0x11B9C1a257751692509D363f197433D8fcDB106f"->Obj.magic,
+        ~yieldManager="0x4c48599575aFF3C677f62611D84e4018beAcA39f"->Obj.magic,
       );
   Js.log("a.5");
   let kInitialMultiplier = bnFromString("2000000000000000000"); // 2x
@@ -745,7 +785,7 @@ let deployAvalancheMarket =
   let unstakeFee_e18 = bnFromString("5000000000000000"); // 50 basis point unstake fee
   let initialMarketSeedForEachMarketSide =
     bnFromString("1000000000000000000");
-  let%AwaitThen _ =
+  let%Await _ =
     paymentToken
     ->ContractHelpers.connect(~address=admin)
     ->ERC20Mock.approve(
@@ -753,26 +793,25 @@ let deployAvalancheMarket =
         ~amount=initialMarketSeedForEachMarketSide->mul(bnFromInt(3)),
       );
   Js.log("a.7");
-  let%AwaitThen _ =
-    longShortInstance
-    ->ContractHelpers.connect(~address=admin)
-    ->LongShort.initializeMarket(
-        ~marketIndex=newMarketIndex,
-        ~kInitialMultiplier,
-        ~kPeriod,
-        ~unstakeFee_e18, // 50 basis point unstake fee
-        ~initialMarketSeedForEachMarketSide,
-        ~balanceIncentiveCurve_exponent=bnFromInt(5),
-        ~balanceIncentiveCurve_equilibriumOffset=bnFromInt(0),
-        ~marketTreasurySplitGradient_e18=CONSTANTS.tenToThe18,
-        ~marketLeverage=bnFromInt(marketLeverage)->mul(CONSTANTS.tenToThe18),
-      );
-  Js.log("market launched, setting the funding rate");
-
-  longShortInstance
-  ->ContractHelpers.connect(~address=admin)
-  ->LongShort.changeMarketFundingRateMultiplier(
-      ~marketIndex=newMarketIndex,
-      ~fundingRateMultiplier_e18=fundingRateMultiplier,
-    );
+  // let%AwaitThen _ =
+  //   longShortInstance
+  //   ->ContractHelpers.connect(~address=admin)
+  //   ->LongShort.initializeMarket(
+  //       ~marketIndex=newMarketIndex,
+  //       ~kInitialMultiplier,
+  //       ~kPeriod,
+  //       ~unstakeFee_e18, // 50 basis point unstake fee
+  //       ~initialMarketSeedForEachMarketSide,
+  //       ~balanceIncentiveCurve_exponent=bnFromInt(5),
+  //       ~balanceIncentiveCurve_equilibriumOffset=bnFromInt(0),
+  //       ~marketTreasurySplitGradient_e18=CONSTANTS.tenToThe18,
+  //       ~marketLeverage=bnFromInt(marketLeverage)->mul(CONSTANTS.tenToThe18),
+  //     );
+  // Js.log("market launched, setting the funding rate");
+  // longShortInstance
+  // ->ContractHelpers.connect(~address=admin)
+  // ->LongShort.changeMarketFundingRateMultiplier(
+  //     ~marketIndex=newMarketIndex,
+  //     ~fundingRateMultiplier_e18=fundingRateMultiplier,
+  //   );
 };

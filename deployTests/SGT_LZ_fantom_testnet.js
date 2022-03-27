@@ -20,10 +20,8 @@ function deployMasterMarkets(param, deploymentArgs) {
                 return LetOps.AwaitThen.let_(ethers.getSigners(), (function (loadedAccounts) {
                               var admin = loadedAccounts[1];
                               console.log("deploying markets");
-                              return LetOps.AwaitThen.let_(TestnetDeployHelpers.deployFantomTestnetMarketUpgradeable("Stargate Finance 3x", "3SGT", longShort, staker, treasury, admin, paymentToken, ethUSDPriceFeedAddress, deploymentArgs.deployments, namedAccounts), (function (param) {
-                                            return LetOps.AwaitThen.let_(TestnetDeployHelpers.deployFantomTestnetMarketUpgradeable("FANTOM Market 2x", "FTM2", longShort, staker, treasury, admin, paymentToken, fantomUsdPriceFeedAddress, deploymentArgs.deployments, namedAccounts), (function (param) {
-                                                          return TestnetDeployHelpers.deployFantomTestnetMarketUpgradeable("Ether Market 2x", "ETH2", longShort, staker, treasury, admin, paymentToken, btcUSDPriceFeedAddress, deploymentArgs.deployments, namedAccounts);
-                                                        }));
+                              return LetOps.AwaitThen.let_(TestnetDeployHelpers.deployFantomTestnetMarketUpgradeable("AVAX Market 2x", "2AVAX", longShort, staker, treasury, admin, paymentToken, fantomUsdPriceFeedAddress, deploymentArgs.deployments, namedAccounts), (function (param) {
+                                            return TestnetDeployHelpers.deployFantomTestnetMarketUpgradeable("Ether Market 2x", "ETH2", longShort, staker, treasury, admin, paymentToken, btcUSDPriceFeedAddress, deploymentArgs.deployments, namedAccounts);
                                           }));
                             }));
               }));

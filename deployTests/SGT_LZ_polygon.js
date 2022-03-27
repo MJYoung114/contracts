@@ -23,10 +23,8 @@ function launchSlaveMarkets(param, deploymentArgs) {
                 return LetOps.AwaitThen.let_(ethers.getSigners(), (function (loadedAccounts) {
                               var admin = loadedAccounts[1];
                               console.log("deploying markets");
-                              return LetOps.AwaitThen.let_(DeployHelpers.deployAvalancheMarket(longShort, staker, treasury, admin, paymentToken, avaxOraclePriceFeedAddress, deploymentArgs.deployments, namedAccounts, "Stargate Finance 3x", "3SGT", CONSTANTS.tenToThe18, 3, 1, /* AaveDAI */0), (function (param) {
-                                            return LetOps.AwaitThen.let_(DeployHelpers.deployAvalancheMarket(longShort, staker, treasury, admin, paymentToken, avaxOraclePriceFeedAddress, deploymentArgs.deployments, namedAccounts, "AVAX Market 2x", "2ETH", CONSTANTS.tenToThe18, 2, 2, /* AaveDAI */0), (function (param) {
-                                                          return DeployHelpers.deployAvalancheMarket(longShort, staker, treasury, admin, paymentToken, avaxOraclePriceFeedAddress, deploymentArgs.deployments, namedAccounts, "Ether Market 2x", "ETH2", CONSTANTS.tenToThe18, 2, 3, /* AaveDAI */0);
-                                                        }));
+                              return LetOps.AwaitThen.let_(DeployHelpers.deployAvalancheMarket(longShort, staker, treasury, admin, paymentToken, avaxOraclePriceFeedAddress, deploymentArgs.deployments, namedAccounts, "AVAX Market 2x", "2AVAX", CONSTANTS.tenToThe18, 2, 2, /* AaveDAI */0), (function (param) {
+                                            return DeployHelpers.deployAvalancheMarket(longShort, staker, treasury, admin, paymentToken, avaxOraclePriceFeedAddress, deploymentArgs.deployments, namedAccounts, "Ether Market 2x", "2ETH", CONSTANTS.tenToThe18, 2, 3, /* AaveDAI */0);
                                           }));
                             }));
               }));

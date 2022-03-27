@@ -21,13 +21,12 @@ module.exports = async ({ deployments }) => {
 
   // Upgrade LongShort
   let longShortContractName = LONGSHORT;
-  if (networkToUse == "polygon") {
-    longShortContractName = "LongShortPolygon";
-  } else if (networkToUse === "avalanche") {
-    longShortContractName = "LongShortAvalanche";
-  } else if (networkToUse === "mumbai") {
-    longShortContractName = "LongShortTesting";
+  if (networkToUse === "mumbai" || networkToUse === "mumbai2") {
+    longShortContractName = "LongShortSlave";
+  } else if (networkToUse === "fantom-testnet") {
+    longShortContractName = "LongShortMaster";
   }
+
   const longShort = await deploy(LONGSHORT, {
     contract: longShortContractName,
     from: deployer,
