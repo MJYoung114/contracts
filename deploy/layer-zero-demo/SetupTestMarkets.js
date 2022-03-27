@@ -1,9 +1,9 @@
-const {
-  launchSlaveMarkets,
-} = require("../../deployTests/SGT_LZ_polygon");
-const {
-  deployMasterMarkets,
-} = require("../../deployTests/SGT_LZ_fantom_testnet");
+// const {
+//   launchSlaveMarkets,
+// } = require("../../deployTests/SGT_LZ_polygon");
+// const {
+//   deployMasterMarkets,
+// } = require("../../deployTests/SGT_LZ_fantom_testnet");
 const { ethers } = require("hardhat");
 
 const {
@@ -13,8 +13,8 @@ const {
   LONGSHORT,
   isAlphaLaunch,
   TREASURY_ALPHA,
-} = require("../../../helper-hardhat-config");
-const { avalancheDaiAddress } = require("../../config");
+} = require("../../helper-hardhat-config");
+const { avalancheDaiAddress } = require("../config");
 const { assert } = require("chai");
 
 // const expectedMarketIndex = 4

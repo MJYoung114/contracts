@@ -74,7 +74,7 @@ if (process.env.HARDHAT_FORK) {
 module.exports = {
   // This is a sample solc configuration that specifies which version of solc to use
   solidity: {
-    version: "0.8.10",
+    version: "0.8.13",
     settings: {
       optimizer: {
         enabled: true,

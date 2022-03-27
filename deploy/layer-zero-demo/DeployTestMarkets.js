@@ -13,8 +13,8 @@ const {
   LONGSHORT,
   isAlphaLaunch,
   TREASURY_ALPHA,
-} = require("../../../helper-hardhat-config");
-const { avalancheDaiAddress } = require("../../config");
+} = require("../../helper-hardhat-config");
+const { avalancheDaiAddress } = require("../config");
 const { assert } = require("chai");
 
 // const expectedMarketIndex = 4

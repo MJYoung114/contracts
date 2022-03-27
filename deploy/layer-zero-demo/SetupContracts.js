@@ -1,12 +1,12 @@
-const { runTestTransactions } = require("../deployTests/RunTestTransactions");
-const {
-  runMumbaiTransactions,
-} = require("../deployTests/RunMumbaiTransactions");
-const {
-  runFantomTestnetTransactions,
-} = require("../deployTests/RunFantomTestnetTransactions");
-const { launchPolygonMarkets } = require("../deployTests/PolygonTransactions");
-const { launchAvaxMarket } = require("../deployTests/AvalancheTransactions");
+// const { runTestTransactions } = require("../deployTests/RunTestTransactions");
+// const {
+//   runMumbaiTransactions,
+// } = require("../deployTests/RunMumbaiTransactions");
+// const {
+//   runFantomTestnetTransactions,
+// } = require("../deployTests/RunFantomTestnetTransactions");
+// const { launchPolygonMarkets } = require("../deployTests/PolygonTransactions");
+// const { launchAvaxMarket } = require("../deployTests/AvalancheTransactions");
 const { ethers } = require("hardhat");
 
 const {
@@ -21,8 +21,8 @@ const {
   FLOAT_TOKEN_ALPHA,
   TREASURY_ALPHA,
   GEMS,
-} = require("../helper-hardhat-config");
-const { avalancheDaiAddress } = require("./config");
+} = require("../../helper-hardhat-config");
+const { avalancheDaiAddress } = require("../config");
 
 let networkToUse = network.name;
 
