@@ -39,6 +39,7 @@ contract-docs
 
 deployments/*
 !deployments/mumbai
+!deployments/mumbai2
 !deployments/polygon
 !deployments/avalanche
 !deployments/fantom-testnet
