@@ -10,7 +10,6 @@ const { launchAvaxMarket } = require("../deployTests/AvalancheTransactions");
 const { ethers } = require("hardhat");
 
 const {
-  STAKER,
   TEST_COLLATERAL_TOKEN,
   TREASURY,
   LONGSHORT,

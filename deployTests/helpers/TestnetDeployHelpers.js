@@ -18,7 +18,7 @@ function deployTestMarketCore(syntheticName, syntheticSymbol, longShortInstance,
                                             return LetOps.AwaitThen.let_(ProtocolInteractionHelpers.mintAndApprove(paymentToken, Globals.bnFromString("2000000000000000000"), admin, longShortInstance.address), (function (param) {
                                                           var unstakeFee_e18 = Globals.bnFromString("5000000000000000");
                                                           var initialMarketSeedForEachMarketSide = Globals.bnFromString("1000000000000000000");
-                                                          return longShortInstance.connect(admin).initializeMarket(latestMarket, kInitialMultiplier, kPeriod, unstakeFee_e18, initialMarketSeedForEachMarketSide, Globals.bnFromInt(5), Globals.bnFromInt(0), Globals.bnFromInt(1), CONSTANTS.tenToThe18);
+                                                          return longShortInstance.connect(admin).initializeMarket(latestMarket, kInitialMultiplier, kPeriod, unstakeFee_e18, initialMarketSeedForEachMarketSide, Globals.bnFromInt(5), Globals.bnFromInt(0), Globals.bnFromInt(1), Globals.mul(CONSTANTS.twoBn, CONSTANTS.tenToThe18));
                                                         }));
                                           }));
                             }));

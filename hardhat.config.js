@@ -91,16 +91,16 @@ module.exports = {
       // this line ensure the use of the corresponding accounts
       forking: process.env.HARDHAT_FORK
         ? {
-            url:
-              process.env.HARDHAT_FORK == "polygon"
-                ? polygonProviderUrl
-                : mumbaiProviderUrl || "https://rpc-mumbai.maticvigil.com/v1",
-          }
+          url:
+            process.env.HARDHAT_FORK == "polygon"
+              ? polygonProviderUrl
+              : mumbaiProviderUrl || "https://rpc-mumbai.maticvigil.com/v1",
+        }
         : undefined,
       accounts: process.env.HARDHAT_FORK
         ? {
-            mnemonic,
-          }
+          mnemonic,
+        }
         : undefined,
     },
     ganache: {
@@ -125,6 +125,13 @@ module.exports = {
       // gas: 1000000,
     },
     mumbai: {
+      chainId: 80001,
+      url: mumbaiProviderUrl || "https://rpc-mumbai.maticvigil.com/v1",
+      accounts: { mnemonic },
+      // gasPrice: 180000000000,
+      // gas: 8000000,
+    },
+    mumbai2: {
       chainId: 80001,
       url: mumbaiProviderUrl || "https://rpc-mumbai.maticvigil.com/v1",
       accounts: { mnemonic },

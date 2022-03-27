@@ -1,5 +1,6 @@
 const { network } = require("hardhat");
 const {
+  STAKER,
   TEST_COLLATERAL_TOKEN,
   TREASURY,
   TREASURY_ALPHA,
@@ -97,7 +98,23 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   });
   console.log("Gems", gems.address);
 
-  const longShort = await deploy(LONGSHORT, {
+  const staker = await deploy(STAKER, {
+    from: deployer,
+    log: true,
+    proxy: {
+      proxyContract: "UUPSProxy",
+      initializer: false,
+    },
+  });
+
+  let longShortContractToDeploy = LONGSHORT;
+  if (networkToUse === "mumbai" || networkToUse === "mumbai2") {
+    longShortContractToDeploy = "LongShortSlave";
+  } else if (networkToUse === "fantom-testnet") {
+    longShortContractToDeploy = "LongShortMaster";
+  }
+
+  const longShort = await deploy(longShortContractToDeploy, {
     from: deployer,
     log: true,
     proxy: {

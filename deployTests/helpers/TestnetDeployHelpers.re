@@ -53,7 +53,7 @@ let deployTestMarketCore =
       ~balanceIncentiveCurve_exponent=bnFromInt(5),
       ~balanceIncentiveCurve_equilibriumOffset=bnFromInt(0),
       ~marketTreasurySplitGradient_e18=bnFromInt(1),
-      ~marketLeverage=CONSTANTS.tenToThe18,
+      ~marketLeverage=CONSTANTS.twoBn->mul(CONSTANTS.tenToThe18),
     );
 };
 
@@ -128,7 +128,7 @@ let deployTestnetMarketUpgradeableCore =
               "Float Short " ++ syntheticName,
               "f↗️" ++ syntheticSymbol,
               longShortInstance.address,
-              "0x0000000000000000000000000000000000000000",
+              stakerInstance.address,
               newMarketIndex,
               false,
             ),
@@ -150,7 +150,7 @@ let deployTestnetMarketUpgradeableCore =
               "Float Long " ++ syntheticName,
               "f↘️" ++ syntheticSymbol,
               longShortInstance.address,
-              "0x0000000000000000000000000000000000000000",
+              stakerInstance.address,
               newMarketIndex,
               true,
             ),

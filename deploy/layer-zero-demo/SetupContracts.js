@@ -10,6 +10,7 @@ const { launchAvaxMarket } = require("../deployTests/AvalancheTransactions");
 const { ethers } = require("hardhat");
 
 const {
+  STAKER,
   TEST_COLLATERAL_TOKEN,
   TREASURY,
   LONGSHORT,
@@ -63,8 +64,15 @@ module.exports = async (hardhatDeployArguments) => {
   const Gems = await deployments.get(GEMS);
   const gems = await ethers.getContractAt(GEMS, Gems.address);
 
-  const LongShort = await deployments.get(LONGSHORT);
-  const longShort = await ethers.getContractAt(LONGSHORT, LongShort.address);
+
+  let longShortContractToUse = LONGSHORT;
+  if (networkToUse === "mumbai" || networkToUse === "mumbai2") {
+    longShortContractToUse = "LongShortSlave";
+  } else if (networkToUse === "fantom-testnet") {
+    longShortContractToUse = "LongShortMaster";
+  }
+  const LongShort = await deployments.get(longShortContractToUse);
+  const longShort = await ethers.getContractAt(longShortContractToUse, LongShort.address);
 
   let treasuryToUse = isAlphaLaunch ? TREASURY_ALPHA : TREASURY;
   const Treasury = await deployments.get(treasuryToUse);
@@ -76,7 +84,9 @@ module.exports = async (hardhatDeployArguments) => {
     TokenFactory.address
   );
 
-  console.log("3", longShort.address);
+  const Staker = await deployments.get(STAKER);
+  const staker = await ethers.getContractAt(STAKER, Staker.address);
+  console.log("3", longShort.address, staker.address);
 
   const floatTokenToUse = isAlphaLaunch ? FLOAT_TOKEN_ALPHA : FLOAT_TOKEN;
   const FloatToken = await deployments.get(floatTokenToUse);
@@ -136,57 +146,16 @@ module.exports = async (hardhatDeployArguments) => {
     "0x0000000000000000000000000000000000000000"
   );
 
-  console.log("11");
-  if (networkToUse == "polygon") {
-    console.log("polygon test transactions");
-    await launchPolygonMarkets(
-      {
-        longShort: longShort.connect(admin),
-        paymentToken,
-        treasury,
-      },
-      hardhatDeployArguments
+  if (networkToUse === "mumbai" || networkToUse === "mumbai") {
+    await longShort.setDestLzEndpoint(
+      longShort.address,
+      "0xf69186dfBa60DdB133E91E9A4B5673624293d8F8"
     );
-  } else if (networkToUse == "avalanche") {
-    await launchAvaxMarket(
-      {
-        longShort: longShort.connect(admin),
-        paymentToken,
-        treasury,
-      },
-      hardhatDeployArguments
-    );
-  } else if (networkToUse == "mumbai") {
-    console.log("mumbai test transactions");
-    await runMumbaiTransactions(
-      {
-        longShort: longShort.connect(admin),
-        paymentToken,
-        treasury,
-      },
-      hardhatDeployArguments
-    );
-  } else if (networkToUse == "fantom-testnet") {
-    console.log("fantom test transactions");
-    await runFantomTestnetTransactions(
-      {
-        longShort: longShort.connect(admin),
-        paymentToken,
-        treasury,
-      },
-      hardhatDeployArguments
-    );
-  } else if (networkToUse == "hardhat" || networkToUse == "ganache") {
-    console.log("local test transactions");
-    await runTestTransactions(
-      {
-        longShort: longShort.connect(admin),
-        paymentToken,
-        treasury,
-      },
-      hardhatDeployArguments
+  } else if (networkToUse === "fantom-testnet") {
+    await longShort.setDestLzEndpoint(
+      longShort.address,
+      "0x7dcAD72640F835B0FA36EFD3D6d3ec902C7E5acf"
     );
   }
-  console.log("after test txs");
 };
-module.exports.tags = ["all", "setup"];
+module.exports.tags = ["layer-zero-setup"];

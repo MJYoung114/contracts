@@ -35,7 +35,7 @@ type allContracts = {
 
 let launchPolygonMarkets =
     (
-      {longShort, treasury, paymentToken},
+      {longShort, staker, treasury, paymentToken},
       deploymentArgs: Hardhat.hardhatDeployArgument,
     ) => {
   let%AwaitThen namedAccounts = deploymentArgs.getNamedAccounts();
