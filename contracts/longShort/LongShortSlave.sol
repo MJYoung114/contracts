@@ -241,18 +241,60 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     emit NextPriceDeposit(marketIndex, isLong, amount, msg.sender, latestActionIndex[marketIndex]);
   }
 
-  /// @notice Allows users to mint long synthetic assets for a market. To prevent front-running these mints are executed on the next price update from the oracle.
-  /// @param marketIndex An uint32 which uniquely identifies a market.
-  /// @param amount Amount of payment tokens in that token's lowest denominationfor which to mint synthetic assets at next price.
-  function mintLongNextPrice(uint32 marketIndex, uint256 amount) external override {
-    _mintNextPrice(marketIndex, amount, true);
-  }
+  function _redeemNextPrice(
+    uint32 marketIndex,
+    uint256 tokens_redeem,
+    bool isLong
+  )
+    internal
+    override
+    updateSystemStateMarketAndExecuteOutstandingNextPriceSettlements(msg.sender, marketIndex)
+    gemCollecting
+  {
+    require(tokens_redeem > 0, "Redeem amount == 0");
+    ISyntheticToken(syntheticTokens[marketIndex][isLong]).transferFrom(
+      msg.sender,
+      address(this),
+      tokens_redeem
+    );
 
-  /// @notice Allows users to mint short synthetic assets for a market. To prevent front-running these mints are executed on the next price update from the oracle.
-  /// @param marketIndex An uint32 which uniquely identifies a market.
-  /// @param amount Amount of payment tokens in that token's lowest denominationfor which to mint synthetic assets at next price.
-  function mintShortNextPrice(uint32 marketIndex, uint256 amount) external override {
-    _mintNextPrice(marketIndex, amount, false);
+    userNextPrice_syntheticToken_redeemAmount[marketIndex][isLong][msg.sender] += tokens_redeem;
+    uint256 nextUpdateIndex = marketUpdateIndex[marketIndex] + 1;
+    userNextPrice_currentUpdateIndex[marketIndex][msg.sender] = nextUpdateIndex;
+
+    batched_amountSyntheticToken_redeem[marketIndex][isLong] += tokens_redeem;
+
+    ++latestActionIndex[marketIndex];
+
+    userNextPrice_currentActionIndex[marketIndex][msg.sender] = latestActionIndex[marketIndex];
+
+    Types.SlavePushMessage memory pushMessage = Types.SlavePushMessage(
+      latestActionIndex[marketIndex],
+      0,
+      tokens_redeem,
+      marketIndex,
+      isLong
+    );
+
+    bytes memory payload = abi.encode(pushMessage);
+    uint16 destChainId = masterChainId[marketIndex];
+
+    endpoint.send{value: msg.value}(
+      // @param _dstChainId - the destination chain identifier
+      destChainId,
+      // @param _destination - the address on destination chain (in bytes). address length/format may vary by chains
+      masterChainLongShortAddressAsBytes[marketIndex],
+      // @param _payload - a custom bytes payload to send to the destination contract
+      payload,
+      // @param _refundAddress - if the source transaction is cheaper than the amount of value passed, refund the additional amount to this address
+      payable(msg.sender),
+      // @param _zroPaymentAddress - the address of the ZRO token holder who would pay for the transaction
+      address(0),
+      // @param _adapterParams - parameters for custom functionality. e.g. receive airdropped native gas from the relayer on destination
+      bytes("")
+    );
+
+    emit NextPriceRedeem(marketIndex, isLong, tokens_redeem, msg.sender, nextUpdateIndex);
   }
 
   function _executeOutstandingNextPriceSettlements(address user, uint32 marketIndex)

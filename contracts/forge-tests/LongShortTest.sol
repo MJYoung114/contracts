@@ -263,11 +263,30 @@ contract LongShortTest is Helpers {
 
     longShortM.updateSystemState(marketIndex);
 
-    longShortM.executeOutstandingNextPriceSettlementsUser(tempUser1, marketIndex);
-    longShortS.executeOutstandingNextPriceSettlementsUser(tempUser1, marketIndex);
+    // longShortM.executeOutstandingNextPriceSettlementsUser(tempUser1, marketIndex);
+    // longShortS.executeOutstandingNextPriceSettlementsUser(tempUser1, marketIndex);
 
     uint256 user1BalanceAfter = synthLongMarket1M.balanceOf(tempUser1);
     uint256 user2BalanceAfter = synthShortMarket1S.balanceOf(tempUser1);
+    console.log(user1BalanceBefore, user2BalanceBefore);
+    console.log(user1BalanceAfter, user2BalanceAfter);
+
+    longShortM.mintShortNextPrice(marketIndex, 321000555000000000);
+    longShortS.mintLongNextPrice(marketIndex, 381000555000000000);
+
+    // cleanup the test
+    OracleManagerMock(oracleManagerM).setPrice(125e16);
+
+    user1BalanceBefore = synthShortMarket1M.balanceOf(tempUser1);
+    user2BalanceBefore = synthLongMarket1S.balanceOf(tempUser1);
+
+    longShortM.updateSystemState(marketIndex);
+
+    // longShortM.executeOutstandingNextPriceSettlementsUser(tempUser1, marketIndex);
+    // longShortS.executeOutstandingNextPriceSettlementsUser(tempUser1, marketIndex);
+
+    user1BalanceAfter = synthShortMarket1M.balanceOf(tempUser1);
+    user2BalanceAfter = synthLongMarket1S.balanceOf(tempUser1);
     console.log(user1BalanceBefore, user2BalanceBefore);
     console.log(user1BalanceAfter, user2BalanceAfter);
   }
