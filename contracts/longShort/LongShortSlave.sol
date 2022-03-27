@@ -94,12 +94,92 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     emit SystemStateUpdated(
       marketIndex,
       currentMarketIndex,
-      defaultValue,
+      1e18,
       defaultValue,
       defaultValue,
       syntheticToken_priceSnapshot[marketIndex][currentMarketIndex].price_long,
       syntheticToken_priceSnapshot[marketIndex][currentMarketIndex].price_short
     );
+  }
+
+  function getUsersConfirmedButNotSettledSynthBalance(
+    address user,
+    uint32 marketIndex,
+    bool isLong
+  )
+    external
+    view
+    virtual
+    override
+    requireMarketExists(marketIndex)
+    returns (uint256 confirmedButNotSettledBalance)
+  {
+    uint256 currentMarketUpdateIndex = marketUpdateIndex[marketIndex];
+    uint256 userNextPrice_currentUpdateIndex_forMarket = _getUsersUpdateIndex(marketIndex, user);
+    if (
+      userNextPrice_currentUpdateIndex_forMarket != 0 &&
+      userNextPrice_currentUpdateIndex_forMarket <= currentMarketUpdateIndex
+    ) {
+      uint256 amountPaymentTokenDeposited = userNextPrice_paymentToken_depositAmount[marketIndex][
+        isLong
+      ][user];
+
+      uint256 syntheticTokenPrice;
+      uint256 syntheticTokenPriceOnOriginSideOfShift;
+
+      if (isLong) {
+        (
+          syntheticTokenPrice,
+          syntheticTokenPriceOnOriginSideOfShift
+        ) = get_syntheticToken_priceSnapshot(
+          marketIndex,
+          userNextPrice_currentUpdateIndex_forMarket
+        );
+      } else {
+        (
+          syntheticTokenPriceOnOriginSideOfShift,
+          syntheticTokenPrice
+        ) = get_syntheticToken_priceSnapshot(
+          marketIndex,
+          userNextPrice_currentUpdateIndex_forMarket
+        );
+      }
+
+      if (amountPaymentTokenDeposited > 0) {
+        confirmedButNotSettledBalance = _getAmountSyntheticToken(
+          amountPaymentTokenDeposited,
+          syntheticTokenPrice
+        );
+      }
+
+      uint256 amountSyntheticTokensToBeShiftedAwayFromOriginSide = userNextPrice_syntheticToken_toShiftAwayFrom_marketSide[
+          marketIndex
+        ][!isLong][user];
+
+      if (amountSyntheticTokensToBeShiftedAwayFromOriginSide > 0) {
+        confirmedButNotSettledBalance += _getEquivalentAmountSyntheticTokensOnTargetSide(
+          amountSyntheticTokensToBeShiftedAwayFromOriginSide,
+          syntheticTokenPriceOnOriginSideOfShift,
+          syntheticTokenPrice
+        );
+      }
+    }
+  }
+
+  function _getUsersUpdateIndex(uint32 marketIndex, address user)
+    internal
+    view
+    returns (uint256 updateIndex)
+  {
+    updateIndex = userNextPrice_currentUpdateIndex[marketIndex][user];
+    /// Risky code here ;)
+    while (
+      latestActionInLatestConfirmedBatch[marketIndex][updateIndex] <
+      userNextPrice_currentActionIndex[marketIndex][user] &&
+      updateIndex <= marketUpdateIndex[marketIndex]
+    ) {
+      ++updateIndex;
+    }
   }
 
   /// @notice Allows users to mint synthetic assets for a market. To prevent front-running these mints are executed on the next price update from the oracle.
@@ -125,8 +205,8 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
 
     batched_amountPaymentToken_deposit[marketIndex][isLong] += amount;
     userNextPrice_paymentToken_depositAmount[marketIndex][isLong][msg.sender] += amount;
-    // uint256 nextUpdateIndex = marketUpdateIndex[marketIndex] + 1;
-    // userNextPrice_currentUpdateIndex[marketIndex][msg.sender] = nextUpdateIndex;
+    uint256 nextUpdateIndex = marketUpdateIndex[marketIndex] + 1;
+    userNextPrice_currentUpdateIndex[marketIndex][msg.sender] = nextUpdateIndex;
 
     ++latestActionIndex[marketIndex];
 
@@ -180,10 +260,10 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
     virtual
     override
   {
-    uint256 userCurrentUpdateIndex = userNextPrice_currentActionIndex[marketIndex][user];
+    uint256 userCurrentActionIndex = userNextPrice_currentActionIndex[marketIndex][user];
     if (
-      userCurrentUpdateIndex != 0 &&
-      userCurrentUpdateIndex <=
+      userCurrentActionIndex != 0 &&
+      userCurrentActionIndex <=
       latestActionInLatestConfirmedBatch[marketIndex][marketUpdateIndex[marketIndex]]
     ) {
       _executeOutstandingNextPriceMints(marketIndex, user, true);
@@ -214,7 +294,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
         get_syntheticToken_priceSnapshot_side(
           marketIndex,
           isLong,
-          userNextPrice_currentUpdateIndex[marketIndex][user]
+          _getUsersUpdateIndex(marketIndex, user)
         )
       );
       ISyntheticToken(syntheticTokens[marketIndex][isLong]).mint(
@@ -239,7 +319,7 @@ contract LongShortSlave is LongShort, ILayerZeroReceiver {
         get_syntheticToken_priceSnapshot_side(
           marketIndex,
           isLong,
-          userNextPrice_currentUpdateIndex[marketIndex][user]
+          _getUsersUpdateIndex(marketIndex, user)
         )
       );
 

@@ -28,22 +28,18 @@ import "@layerzerolabs/contracts/contracts/interfaces/ILayerZeroEndpoint.sol";
 
 contract LongShortMaster is LongShort, ILayerZeroReceiver {
   /* DATA structure */
-  mapping(uint32 => uint16) public slaveChainId;
-  mapping(uint32 => bytes) public slaveChainLongShortAddressAsBytes;
+
+  mapping(uint32 => uint16[16]) public slaveChainId; // MAKE MULTI
+  mapping(uint32 => bytes[16]) public slaveChainLongShortAddressAsBytes; // MAKE MULTI
 
   // mapping(uint32 => uint256) public marketUpdateIndex;
   mapping(uint32 => uint256) public latestActionIndex;
-
-  mapping(uint32 => mapping(bool => uint256)) public slaveChainsTotalSupply;
 
   /* ══════ User specific ══════ */
   /// NOTE: we are blocking users from doing multiple actions in the same batch
   mapping(uint32 => mapping(address => uint256)) public userNextPrice_currentActionIndex;
 
   mapping(uint32 => mapping(uint256 => uint256)) public latestActionInNextExecutableBatch;
-
-  mapping(uint32 => mapping(uint16 => mapping(bool => uint256)))
-    public batched_slaves_amountPaymentToken_deposit;
 
   ILayerZeroEndpoint public endpoint;
 
@@ -55,12 +51,17 @@ contract LongShortMaster is LongShort, ILayerZeroReceiver {
 
   function setupMarketCommunication(
     uint32 marketIndex,
-    uint16 _slaveChainId,
-    address slaveChainLongShortAddress
+    uint16[] memory _slaveChainId,
+    address[] memory slaveChainLongShortAddress
   ) public adminOnly {
+    require(_slaveChainId.length == slaveChainLongShortAddress.length, "config is wrong length");
     // Get the latested update index here too!
-    slaveChainId[marketIndex] = _slaveChainId;
-    slaveChainLongShortAddressAsBytes[marketIndex] = abi.encodePacked(slaveChainLongShortAddress);
+    for (uint256 i; i < _slaveChainId.length; i++) {
+      slaveChainId[marketIndex][i] = _slaveChainId[i];
+      slaveChainLongShortAddressAsBytes[marketIndex][i] = abi.encodePacked(
+        slaveChainLongShortAddress[i]
+      );
+    }
   }
 
   function lzReceive(
@@ -100,22 +101,26 @@ contract LongShortMaster is LongShort, ILayerZeroReceiver {
     );
 
     bytes memory payload = abi.encode(pushMessage);
-    uint16 destChainId = slaveChainId[marketIndex];
+    uint256 i;
+    while (slaveChainId[marketIndex][i] != 0) {
+      uint16 destChainId = slaveChainId[marketIndex][i];
 
-    endpoint.send{value: msg.value}(
-      // @param _dstChainId - the destination chain identifier
-      destChainId,
-      // @param _destination - the address on destination chain (in bytes). address length/format may vary by chains
-      slaveChainLongShortAddressAsBytes[marketIndex],
-      // @param _payload - a custom bytes payload to send to the destination contract
-      payload,
-      // @param _refundAddress - if the source transaction is cheaper than the amount of value passed, refund the additional amount to this address
-      payable(msg.sender),
-      // @param _zroPaymentAddress - the address of the ZRO token holder who would pay for the transaction
-      address(0),
-      // @param _adapterParams - parameters for custom functionality. e.g. receive airdropped native gas from the relayer on destination
-      bytes("")
-    );
+      endpoint.send{value: msg.value}(
+        // @param _dstChainId - the destination chain identifier
+        destChainId,
+        // @param _destination - the address on destination chain (in bytes). address length/format may vary by chains
+        slaveChainLongShortAddressAsBytes[marketIndex][i],
+        // @param _payload - a custom bytes payload to send to the destination contract
+        payload,
+        // @param _refundAddress - if the source transaction is cheaper than the amount of value passed, refund the additional amount to this address
+        payable(msg.sender),
+        // @param _zroPaymentAddress - the address of the ZRO token holder who would pay for the transaction
+        address(0),
+        // @param _adapterParams - parameters for custom functionality. e.g. receive airdropped native gas from the relayer on destination
+        bytes("")
+      );
+      i++;
+    }
   }
 
   /// @notice Allows users to mint synthetic assets for a market. To prevent front-running these mints are executed on the next price update from the oracle.
@@ -182,13 +187,11 @@ contract LongShortMaster is LongShort, ILayerZeroReceiver {
 
       uint256 syntheticTokenPrice_inPaymentTokens_long = _getSyntheticTokenPrice(
         newLongPoolValue,
-        ISyntheticToken(syntheticTokens[marketIndex][true]).totalSupply() +
-          slaveChainsTotalSupply[marketIndex][true]
+        ISyntheticToken(syntheticTokens[marketIndex][true]).totalSupply()
       );
       uint256 syntheticTokenPrice_inPaymentTokens_short = _getSyntheticTokenPrice(
         newShortPoolValue,
-        ISyntheticToken(syntheticTokens[marketIndex][false]).totalSupply() +
-          slaveChainsTotalSupply[marketIndex][false]
+        ISyntheticToken(syntheticTokens[marketIndex][false]).totalSupply()
       );
 
       assetPrice[marketIndex] = newAssetPrice;
