@@ -33,7 +33,11 @@ if (!!process.env.HARDHAT_FORK) {
 module.exports = async (hardhatDeployArguments) => {
   console.log("setup contracts");
   const { getNamedAccounts, deployments } = hardhatDeployArguments;
-  const { deployer, admin, discountSigner } = await getNamedAccounts();
+
+  // const { deployer, admin, discountSigner } = await getNamedAccounts();
+  const accounts = await ethers.getSigners();
+  // const deployer = accounts[0].address;
+  const admin = accounts[1];
 
   ////////////////////////
   //Retrieve Deployments//
@@ -106,7 +110,7 @@ module.exports = async (hardhatDeployArguments) => {
   // Initialize the contracts/
   // /////////////////////////
   await longShort.initialize(
-    admin,
+    admin.address,
     tokenFactory.address,
     "0x0000000000000000000000000000000000000000",
     gems.address
@@ -141,19 +145,17 @@ module.exports = async (hardhatDeployArguments) => {
   console.log("10");
 
   await gems.initialize(
-    admin,
+    admin.address,
     longShort.address,
     "0x0000000000000000000000000000000000000000"
   );
 
   if (networkToUse === "mumbai" || networkToUse === "mumbai") {
-    await longShort.setDestLzEndpoint(
-      longShort.address,
+    await (await longShort.connect(admin)).setupCommunication(
       "0xf69186dfBa60DdB133E91E9A4B5673624293d8F8"
     );
   } else if (networkToUse === "fantom-testnet") {
-    await longShort.setDestLzEndpoint(
-      longShort.address,
+    await (await longShort.connect(admin)).setupCommunication(
       "0x7dcAD72640F835B0FA36EFD3D6d3ec902C7E5acf"
     );
   }
