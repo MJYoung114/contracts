@@ -144,6 +144,7 @@ module.exports = {
       accounts: { mnemonic },
       saveDeployments: true,
       gasMultiplier: 2,
+      gas: 8000000,
     },
   },
   paths: {

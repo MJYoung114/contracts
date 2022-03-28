@@ -11,7 +11,8 @@ module.exports = async ({ deployments }) => {
   if (
     networkToUse != "polygon" &&
     networkToUse != "mumbai" &&
-    networkToUse != "avalanche"
+    networkToUse != "avalanche" &&
+    networkToUse != "fantom-testnet"
   ) {
     throw new Error("Only run this code on polygon, mumbai or avalanche");
   }

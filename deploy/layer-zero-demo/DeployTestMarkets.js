@@ -1,6 +1,4 @@
-const {
-  launchSlaveMarkets,
-} = require("../../deployTests/SGT_LZ_polygon");
+const { launchSlaveMarkets } = require("../../deployTests/SGT_LZ_polygon");
 const {
   deployMasterMarkets,
 } = require("../../deployTests/SGT_LZ_fantom_testnet");
@@ -68,7 +66,10 @@ module.exports = async (hardhatDeployArguments) => {
     longShortContractToUse = "LongShortMaster";
   }
   const LongShort = await deployments.get(longShortContractToUse);
-  const longShort = await ethers.getContractAt(longShortContractToUse, LongShort.address);
+  const longShort = await ethers.getContractAt(
+    longShortContractToUse,
+    LongShort.address
+  );
   console.log("6", LongShort.address);
 
   let treasuryToUse = isAlphaLaunch ? TREASURY_ALPHA : TREASURY;
@@ -96,9 +97,18 @@ module.exports = async (hardhatDeployArguments) => {
     // );
     let connectedLongShort = await longShort.connect(adminSigner);
 
-    await connectedLongShort.setYieldManager(1, "0x4c48599575aFF3C677f62611D84e4018beAcA39f");
-    await connectedLongShort.setYieldManager(2, "0x4c48599575aFF3C677f62611D84e4018beAcA39f");
-    await connectedLongShort.setYieldManager(3, "0x4c48599575aFF3C677f62611D84e4018beAcA39f");
+    await connectedLongShort.setYieldManager(
+      1,
+      "0x4c48599575aFF3C677f62611D84e4018beAcA39f"
+    );
+    await connectedLongShort.setYieldManager(
+      2,
+      "0x4c48599575aFF3C677f62611D84e4018beAcA39f"
+    );
+    await connectedLongShort.setYieldManager(
+      3,
+      "0x4c48599575aFF3C677f62611D84e4018beAcA39f"
+    );
     await connectedLongShort.setupMarketCommunication(
       1,
       4002,
@@ -131,26 +141,57 @@ module.exports = async (hardhatDeployArguments) => {
     let connectedLongShort = await longShort.connect(adminSigner);
     let marketUpdateIndex = await connectedLongShort.marketUpdateIndex(1);
     console.log("update index " + marketUpdateIndex);
-    await connectedLongShort.setupMarketCommunication(1, ["80001", "80001"], ["0x06F4AD4CD3CC5c92dAfD97B48191B56944D6d594", "0x80Ada349227d6BDdb13e099521ee33C823ACD2bb"]);
     console.log("set 1");
-    await connectedLongShort.setupMarketCommunication(2, [80001, 80001], ["0x06F4AD4CD3CC5c92dAfD97B48191B56944D6d594", "0x80Ada349227d6BDdb13e099521ee33C823ACD2bb"]);
+    await connectedLongShort.setupMarketCommunication(
+      1,
+      [10009, 10009],
+      [
+        "0x06F4AD4CD3CC5c92dAfD97B48191B56944D6d594",
+        "0x80Ada349227d6BDdb13e099521ee33C823ACD2bb",
+      ]
+    );
+    console.log("set 1");
+    await connectedLongShort.setupMarketCommunication(
+      2,
+      [10009, 10009],
+      [
+        "0x06F4AD4CD3CC5c92dAfD97B48191B56944D6d594",
+        "0x80Ada349227d6BDdb13e099521ee33C823ACD2bb",
+      ]
+    );
     console.log("2");
-    await connectedLongShort.setupMarketCommunication(3, [80001, 80001], ["0x06F4AD4CD3CC5c92dAfD97B48191B56944D6d594", "0x80Ada349227d6BDdb13e099521ee33C823ACD2bb"]);
+    await connectedLongShort.setupMarketCommunication(
+      3,
+      [10009, 10009],
+      [
+        "0x06F4AD4CD3CC5c92dAfD97B48191B56944D6d594",
+        "0x80Ada349227d6BDdb13e099521ee33C823ACD2bb",
+      ]
+    );
     console.log("3");
   } else {
     console.error("This command is only available on avalanche");
   }
   let connectedLongShort = await longShort.connect(adminSigner);
 
-  await connectedLongShort.initializeMarket(1, "1000000000000000000",
+  await connectedLongShort.initializeMarket(
+    1,
     "1000000000000000000",
-    "1000000000000000000");
-  await connectedLongShort.initializeMarket(2, "1000000000000000000",
     "1000000000000000000",
-    "1000000000000000000");
-  await connectedLongShort.initializeMarket(3, "1000000000000000000",
+    "1000000000000000000"
+  );
+  await connectedLongShort.initializeMarket(
+    2,
     "1000000000000000000",
-    "1000000000000000000");
+    "1000000000000000000",
+    "1000000000000000000"
+  );
+  await connectedLongShort.initializeMarket(
+    3,
+    "1000000000000000000",
+    "1000000000000000000",
+    "1000000000000000000"
+  );
 
   console.log("Deployment complete");
 };
